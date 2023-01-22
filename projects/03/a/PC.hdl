@@ -16,5 +16,19 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    Inc16 (in=loop, out=plus1);
+
+    Or (a=reset, b=load, out=sel0);
+
+    Or (a=reset, b=load, out=RorL);
+    Not (in=RorL, out=notRorL);
+    And (a=inc, b=notRorL, out=and);
+    Or (a=reset, b=and, out=sel1);
+
+    Or (a=reset, b=inc, out=or1);
+    Or (a=or1, b=load, out=L);
+
+    Mux4Way16 (a=loop, b=in, c=plus1, d=false, sel[0]=sel0, sel[1]=sel1, out=fin);
+
+    Register (in=fin, load=L, out=out, out=loop);
 }
