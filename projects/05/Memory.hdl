@@ -27,5 +27,28 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+
+    // Only access regular memory if load is true AND the address is 
+    // less than 16K, in other words, the MSB of address is 0
+    Not (in=address[14], out=memory);
+    And (a=load, b=memory, out=loadMemory);
+    RAM16K (in=in, load=loadMemory, address=address[0..13], out=memOut);
+
+    // Only access screen memory if load is true AND the address is 
+    // greater than 16K, but less than the keyboard address
+    Not (in=address[13], out=notAddress13);
+    And (a=address[14], b=notAddress13, out=screen);
+    Screen (in=in, load=screen, address=address[0..12], out=screenOut);
+    
+    // Keyboard ALWAYS outputs whatever is in its memory
+    Keyboard (out=keyboardOut);
+
+    // Choose which output to send out based on the address.
+    Mux4Way16 (a=memOut, 
+               b=memOut, 
+               c=screenOut, 
+               d=keyboardOut,
+               sel[0]=address[13],
+               sel[1]=address[14],
+               out=out);
 }

@@ -39,5 +39,63 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    
+    ALU (x=inputD,
+         y=inputAM, 
+         zx=instruction[11],
+         nx=instruction[10],
+         zy=instruction[9],
+         ny=instruction[8],
+         f=instruction[7],
+         no=instruction[6],
+         zr=zr,
+         ng=ng,
+         out=loop,
+         out=outM);
+    
+    // If it's an A instruction, load the A register
+    // If it's a C instruction don't 
+    // (the instruction will be routed to the various control bits)
+    Mux16 (a=instruction, b=loop, sel=instruction[15], out=regA);
+
+    // Load the A register if it is an A instruction or if it is a
+    // C instruction with a destination of A
+    And (a=instruction[5], b=instruction[15], out=cInstWithDesta);
+    Not (in=instruction[15], out=aInstruction);
+    Or (a=cInstWithDesta, b=aInstruction, out=loadRegA);
+    ARegister (in=regA, load=loadRegA, out=outA, out[0..14]=addressM);
+
+    // Load the D register with ALU output it is a C instruction
+    // and the destination is the D register
+    And (a=instruction[15], b=instruction[4], out=loadRegD);
+    DRegister (in=loop, load=loadRegD, out=inputD);
+
+    // If it is a C instruction, choose either the A register or the
+    // memory (M) as the input to the ALU
+    And (a=instruction[15], b=instruction[12], out=aMuxM);
+    Mux16 (a=outA, b=inM, sel=aMuxM, out=inputAM);
+
+    // Is the output positive?
+    Not (in=zr, out=notZero);
+    Not (in=ng, out=notNegative);
+    And (a=notZero, b=notNegative, out=ps);
+
+    // Jump if the output is ___ and the jump instruction is the same
+    // (example: jump if the output is positive, and the j3 bit is 1)
+    And (a=ps, b=instruction[0], out=jgt);
+    And (a=zr, b=instruction[1], out=jeq);
+    And (a=ng, b=instruction[2], out=jlt);
+    
+    // Jump if ANY of the above jump conditions are met
+    Or (a=jgt, b=jeq, out=jge);
+    Or (a=jlt, b=jge, out=jump);
+
+    // Load the program counter if it is a C instruciton and ANY of the jump
+    // conditions are met.  Otherwise, increment the counter
+    And (a=instruction[15], b=jump, out=load);
+    Not (in=load, out=inc);
+    PC (in=outA, load=load, inc=inc, reset=reset, out[0..14]=pc);
+
+    // Write to memory if it is a C instruciton and the destination is memory
+    And (a=instruction[15], b=instruction[3], out=writeM);
 }
