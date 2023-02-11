@@ -10,3 +10,5 @@ tools/
 out.asm
 out.hack
 *.zip
+
+*.class
