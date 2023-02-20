@@ -6,7 +6,6 @@ tools/
 *.vcd
 *.dblite
 *.hack
-*.vm
 out.asm
 out.hack
 *.zip
