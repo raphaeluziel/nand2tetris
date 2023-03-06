@@ -208,6 +208,11 @@ class CodeWriter {
 	}
 
 
+	public static void writeGoto(Command vmCode) throws IOException{
+		writer.write("@" + vmCode.getarg1() + "\n0;JEQ\n\n");
+	}
+
+
 	public static void writeIf(Command vmCode) throws IOException{
 		writer.write("@SP\nA=M-1\nD=M\n@SP\nM=M-1\n@" + vmCode.getarg1() + "\nD;JNE\n\n");
 	}
@@ -228,6 +233,9 @@ class CodeWriter {
 				break;
 			case "C_LABEL":
 				writeLabel(vmCode);
+				break;
+			case "C_GOTO":
+				writeGoto(vmCode);
 				break;
 			case "C_IF":
 				writeIf(vmCode);
