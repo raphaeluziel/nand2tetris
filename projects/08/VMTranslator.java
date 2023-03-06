@@ -31,6 +31,18 @@ class Command {
 				arg1 = comm[1];
 				arg2 = Integer.parseInt(comm[2]);
 				break;
+			case "label":
+				commandType = "C_LABEL";
+				arg1 = comm[1];
+				break;
+			case "goto":
+				commandType = "C_GOTO";
+				arg1 = comm[1];
+				break;
+			case "if-goto":
+				commandType = "C_IF";
+				arg1 = comm[1];
+				break;
 			default:
 				commandType = "C_ARITHMETIC";
 				arg1 = comm[0];
@@ -98,6 +110,8 @@ class CodeWriter {
 
 	public static void writePushPop(String commandType, String segment, int i) throws IOException{
 
+		String code = "";
+
 		seg.put("temp", Integer.toString(5 + i));
 		String variable = fileName.substring(fileName.lastIndexOf("/") + 1, fileName.indexOf(".")) + "." + i;
 
@@ -113,38 +127,45 @@ class CodeWriter {
 		}
 
 		if (commandType.equals("C_PUSH")) {
-			if (segment.equals("constant")) {
-				writer.write("@" + i + "\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n");
-			}
-			else if (segment.equals("temp")) {
-				writer.write("@" + i + "\nD=A\n@5" + "\nA=A+D\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n");
-			}
-			else if (segment.equals("pointer")) {
-				writer.write("@" + seg.get(segment) + "\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n");
-			}
-			else if (segment.equals("static")) {
-				writer.write("@" + variable + "\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n");
-			}
-			else {
-				writer.write("@" + i + "\nD=A\n@" + seg.get(segment) + "\nA=M+D\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n");
+
+			switch(segment) {
+				case "constant":
+					code = "@" + i + "\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n";
+					break;
+				case "temp":
+					code = "@" + i + "\nD=A\n@5" + "\nA=A+D\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n";
+					break;
+				case "pointer":
+					code = "@" + seg.get(segment) + "\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n";
+					break;
+				case "static":
+					code = "@" + variable + "\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n";
+					break;
+				// Default is for 'this', 'that', 'local', or 'argument'	
+				default:
+					code = "@" + i + "\nD=A\n@" + seg.get(segment) + "\nA=M+D\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n";
 			}	
 		}
 
 		else if (commandType.equals("C_POP")) {
-			if (segment.equals("temp")){
-				writer.write("@SP\nAM=M-1\nD=M\n@" + (i+5) + "\nM=D\n");
-			}
-			else if (segment.equals("pointer")) {
-				writer.write("@SP\nAM=M-1\nD=M\n@" + seg.get(segment) + "\nM=D\n");
-			}
-			else if (segment.equals("static")) {
-				writer.write("@SP\nAM=M-1\nD=M\n@" + variable + "\nM=D\n");
-			}
-			else {
-				writer.write("@" + i + "\nD=A\n@" + seg.get(segment) + "\nA=M\nD=A+D\n@SP\nAM=M-1\nA=M\nD=A+D\nA=D-A\nD=D-A\nM=D\n");
+			switch(segment) {
+				case "temp":
+					code = "@SP\nAM=M-1\nD=M\n@" + (i+5) + "\nM=D\n";
+					break;
+				case "pointer":
+					code = "@SP\nAM=M-1\nD=M\n@" + seg.get(segment) + "\nM=D\n";
+					break;
+				case "static":
+					code = "@SP\nAM=M-1\nD=M\n@" + variable + "\nM=D\n";
+					break;
+				// Default is for 'this', 'that', 'local', or 'argument'	
+				default:
+					code = "@" + i + "\nD=A\n@" + seg.get(segment) + "\nA=M\nD=A+D\n@SP\nAM=M-1\nA=M\nD=A+D\nA=D-A\nD=D-A\nM=D\n";
 			}
 		}
+		writer.write(code + "\n");
 	}
+
 
 	public static void writeArithmetic(Command vmCode, int counter) throws IOException{
 
@@ -158,16 +179,16 @@ class CodeWriter {
 				code = "@SP\nA=M\nA=A-1\nM=-M";
 				break;
 			case "add":
-				code = "@SP\nA=M\nA=A-1\nD=M\nA=A-1\nM=D+M\n@SP\nM=M-1";
+				code = "@SP\nA=M\nA=A-1\nD=M\nA=A-1\nM=D+M\n@SP\nM=M-1\n";
 				break;
 			case "sub":
-				code = "@SP\nA=M\nA=A-1\nD=M\nA=A-1\nM=M-D\n@SP\nM=M-1";
+				code = "@SP\nA=M\nA=A-1\nD=M\nA=A-1\nM=M-D\n@SP\nM=M-1\n";
 				break;
 			case "and":
-				code = "@SP\nA=M\nA=A-1\nD=M\nA=A-1\nM=D&M\n@SP\nM=M-1";
+				code = "@SP\nA=M\nA=A-1\nD=M\nA=A-1\nM=D&M\n@SP\nM=M-1\n";
 				break;
 			case "or":
-				code = "@SP\nA=M\nA=A-1\nD=M\nA=A-1\nM=D|M\n@SP\nM=M-1";
+				code = "@SP\nA=M\nA=A-1\nD=M\nA=A-1\nM=D|M\n@SP\nM=M-1\n";
 				break;
 			case "eq":
 				code = "@SP\nA=M\nA=A-1\nD=M\nA=A-1\nD=M-D\n@SP\nM=M-1\nM=M-1\n@SP\nA=M\nM=-1\n@EQ_" + counter + "\nD;JEQ\n@SP\nA=M\nM=0\n(EQ_" + counter + ")\n@SP\nM=M+1\n";
@@ -178,18 +199,39 @@ class CodeWriter {
 			case "gt":
 				code = "@SP\nA=M\nA=A-1\nD=M\nA=A-1\nD=M-D\n@SP\nM=M-1\nM=M-1\n@SP\nA=M\nM=-1\n@GT_" + counter + "\nD;JGT\n@SP\nA=M\nM=0\n(GT_" + counter + ")\n@SP\nM=M+1\n";
 		}
-		writer.write(code);
+		writer.write(code + "\n");
 	}
+
+
+	public static void writeLabel(Command vmCode) throws IOException{
+		writer.write("(" + vmCode.getarg1() + ")\n");
+	}
+
+
+	public static void writeIf(Command vmCode) throws IOException{
+		writer.write("@SP\nA=M-1\nD=M\n@SP\nM=M-1\n@" + vmCode.getarg1() + "\nD;JNE\n\n");
+	}
+
 
 	public static void writeAsm(Command vmCode, int counter) throws IOException {
 
-		writer.write("// " + vmCode.getcode() + "\n");
-
-		if (vmCode.gettype().equals("C_PUSH") || vmCode.gettype().equals("C_POP")) {
-			writePushPop(vmCode.gettype(), vmCode.getarg1(), vmCode.getarg2()); 
-		}
-		else if (vmCode.gettype().equals("C_ARITHMETIC")) { 
-			writeArithmetic(vmCode, counter); 
+		if (!vmCode.gettype().equals("C_LABEL")) 
+			writer.write("// " + vmCode.getcode() + "\n");
+		
+		switch (vmCode.gettype()) {
+			case "C_PUSH":
+			case "C_POP":
+				writePushPop(vmCode.gettype(), vmCode.getarg1(), vmCode.getarg2());
+				break;
+			case "C_ARITHMETIC":
+				writeArithmetic(vmCode, counter); 
+				break;
+			case "C_LABEL":
+				writeLabel(vmCode);
+				break;
+			case "C_IF":
+				writeIf(vmCode);
+				break;
 		}
 	}
 
@@ -220,6 +262,9 @@ public class VMTranslator {
 
 			while (parser.hasMoreLines()) {
 				Command vmCode = parser.advance();
+				//System.out.println(vmCode.getcode());
+				//System.out.println(vmCode.gettype() + "\t" + vmCode.getarg1() + "\t" + vmCode.getarg2());
+				//System.out.println();
 				counter++;
 				codeWriter.writeAsm(vmCode, counter);
 			}
