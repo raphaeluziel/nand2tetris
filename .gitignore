@@ -9,5 +9,5 @@ tools/
 out.asm
 out.hack
 *.zip
-
+.env
 *.class
