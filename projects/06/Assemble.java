@@ -129,7 +129,6 @@ public class Assemble {
         else {
             num = Integer.parseInt(aInst);
         }
-        System.out.println("DREAM " + num);
 
         aInst = String.format("%32s", Integer.toBinaryString(num))
                             .replace(' ', '0').substring(17);
@@ -220,12 +219,6 @@ public class Assemble {
             System.exit(1);
             //e.printStackTrace();
         }
-
-
-        symbol.entrySet().forEach(entry -> {
-            System.out.println(" - " + entry.getValue() + "\t" + entry.getKey());
-        });
-        
 
     }
 

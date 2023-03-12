@@ -1,5 +1,5 @@
 // function SimpleFunction.test 2
-(SimpleFunction.test)
+(simplefunction.test)
 @0
 D=A
 @SP
@@ -25,7 +25,6 @@ A=M
 M=D
 @SP
 M=M+1
-
 // push local 1
 @1
 D=A
@@ -37,7 +36,6 @@ A=M
 M=D
 @SP
 M=M+1
-
 // add
 @SP
 A=M
@@ -47,13 +45,11 @@ A=A-1
 M=D+M
 @SP
 M=M-1
-
 // not
 @SP
 A=M
 A=A-1
 M=!M
-
 // push argument 0
 @0
 D=A
@@ -65,7 +61,6 @@ A=M
 M=D
 @SP
 M=M+1
-
 // add
 @SP
 A=M
@@ -75,7 +70,6 @@ A=A-1
 M=D+M
 @SP
 M=M-1
-
 // push argument 1
 @1
 D=A
@@ -87,7 +81,6 @@ A=M
 M=D
 @SP
 M=M+1
-
 // sub
 @SP
 A=M
@@ -97,7 +90,6 @@ A=A-1
 M=M-D
 @SP
 M=M-1
-
 // return
 @LCL
 D=M
@@ -146,4 +138,6 @@ A=M-D
 D=M
 @LCL
 M=D
-
+@14
+A=M
+0;JMP
