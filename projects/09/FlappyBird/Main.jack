@@ -1,0 +1,35 @@
+// By Raphael Uziel
+// File name: projects/09/FlappyBird/Main.jack
+
+/** Receives user inputs, then initializes a new Flappy Bird game and starts running it. */
+class Main {
+    function void main() {
+
+        var int level;
+        var char gravity;
+        var Game game;
+
+        do Output.printString("This is a nand2tetris remake of the classic game Flappy Bird");
+        do Output.println();
+        do Output.println();
+        do Output.printString("Using the up and down cursor keys try to get the bird to fly");
+        do Output.println();
+        do Output.printString("through the openings between the pipes as he flies.");
+        do Output.println();
+        do Output.println();
+        do Output.printString("NOTE: the down cursor key is inactive if you choose to have");
+        do Output.println();
+        do Output.printString("gravity, in which case the bird will start falling immediately");
+        do Output.println();
+        do Output.printString("unless you press the up arrow key.");
+        do Output.println();
+        do Output.println();
+
+        let gravity = Keyboard.readLine("Add gravity (y/n): ");
+
+        let game = Game.new(gravity);
+        do game.run();
+        do game.dispose();
+        return;
+    }
+}
