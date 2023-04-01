@@ -369,7 +369,7 @@ public class VMTranslator {
 	public static void main(String args[]) {
 
 		if (args.length != 1) {
-			System.out.println("Usage: java Assemble filename");
+			System.out.println("Usage: java VMTranslator filename or directory");
 			System.exit(1);
 		}
 
