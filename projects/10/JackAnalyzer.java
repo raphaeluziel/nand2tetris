@@ -5,15 +5,6 @@ import java.util.stream.*;
 
 public class JackAnalyzer {
 
-    private static void writeXML (FileWriter w, String s, boolean close) {
-        try {
-            w.write(s);
-            if (close)  w.close();
-        }
-        catch (IOException e) {
-            System.out.println(e);
-        }
-    }
 
     public static void main (String args[]) {
 
@@ -25,7 +16,8 @@ public class JackAnalyzer {
         File file = new File(args[0]);
         FileFilter isJack = (f) -> { return f.getName().endsWith(".jack"); };
         List<File> inputFileList = new ArrayList<File>();
-        List<JackTokenizer> jackTokenizerList = new ArrayList<JackTokenizer>();
+        List<JackTokenizer> tokenizerList = new ArrayList<JackTokenizer>();
+        List<CompilationEngine> engineList = new ArrayList<CompilationEngine>();
 
         if (file.isDirectory())
             inputFileList = Arrays.asList(file.listFiles(isJack));
@@ -35,32 +27,41 @@ public class JackAnalyzer {
         int numFiles = inputFileList.size();
         FileWriter[] writer = new FileWriter[numFiles];
 
-        // Iterate through each file
+        // Iterate through each file and generate token XML file for each
         for (int i = 0; i < numFiles; i++) {
             String inputFileName = inputFileList.get(i).getPath();
-            String x = inputFileList.get(i).getPath();
-            String outputFileName = "XML/" + x.substring(0, x.indexOf(".")) + "T.xml";
+            String x = inputFileName;
+            String tokenOutputFileName = "XML/" + x.substring(0, x.indexOf(".")) + "T.xml";
+            String outputFileName = "XML/" + x.substring(0, x.indexOf(".")) + ".xml";
 
             try {
-                jackTokenizerList.add(new JackTokenizer(inputFileList.get(i), inputFileName));
-                writer[i] = new FileWriter(outputFileName);
+                tokenizerList.add(new JackTokenizer(inputFileList.get(i), inputFileName));
+                JackTokenizer tokenizer = tokenizerList.get(i);
+
+                engineList.add(new CompilationEngine(tokenizer, inputFileName, outputFileName));
+
+                // Write to the token XML file
+                writer[i] = new FileWriter(tokenOutputFileName);
+                writer[i].write("<tokens>\n");
+                while (tokenizer.hasMoreTokens()) {
+                    tokenizer.advance();
+                    writer[i].write(tokenizer.toXML() + "\n");
+                }
+                tokenizer.reset();    
+                writer[i].write("</tokens>\n");
+                writer[i].close();
             }
             catch (IOException e) {
                 System.out.println(e);
             }
         }
 
-        // Iterate through each jackTokenizer, then iterate through each token
-        // and write the XML to the file
+        // Iterate through each compilation engine
         for (int i = 0; i < numFiles; i++) {
-            JackTokenizer tokenizer = jackTokenizerList.get(i);
-            writeXML(writer[i], "<tokens>\n", false);
-            while (tokenizer.hasMoreTokens()) {
-                tokenizer.advance();
-                writeXML(writer[i], tokenizer.toXML() + "\n", false);
-            }        
-            writeXML(writer[i], "</tokens>\n", true);
+            CompilationEngine engine = engineList.get(i);
+            engine.run();
         }
+
 
     }
 }
