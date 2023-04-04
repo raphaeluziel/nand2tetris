@@ -8,10 +8,12 @@ class Token {
     private final String token;
     private final String type;
     private final String tag;
+    private final int line;
 
-    public Token(String tok, String typ, String tg) {
+    public Token(String tok, String typ, String tg, int ln) {
         type = typ;
         tag = tg;
+        line = ln;
 
         if      (tok.equals("<"))   token = "&lt;";
         else if (tok.equals(">"))   token = "&gt;";
@@ -25,12 +27,13 @@ class Token {
     }
 
     public String toString() {
-        return "[Token: '" + token + "', type: " + type + ", tag:" + tag + "]";
+        return "[Token: '" + token + "', type: " + type + ", tag: " + tag + ", line: " + line  + "]";
     }
 
     public String gettoken()     { return token; }
     public String gettype()      { return type;  }
     public String gettag()       { return tag;   }
+    public int    getline()      { return line;  }
 }
 
 

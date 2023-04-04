@@ -16,6 +16,7 @@ class JackTokenizer {
     private boolean multiLineComment = false;
     private final int numTokens;
     private int t = 0;
+    private int line = 0;
 
 
 	public JackTokenizer(File inputFile, String f) throws IOException {
@@ -35,6 +36,7 @@ class JackTokenizer {
         int num = 0;    // Will be used to calculate the number of tokens
         
         while (reader.hasNextLine()) {
+            line++;
             jackCode = removeComments(reader.nextLine());     
             if (jackCode.isEmpty()) continue;
 
@@ -54,25 +56,25 @@ class JackTokenizer {
                     cursor = nextSeparator;
                 }
                 else if (symbols.contains(c)) {
-                    tokenList.add(new Token(Character.toString(c), "SYMBOL", "symbol"));
+                    tokenList.add(new Token(Character.toString(c), "SYMBOL", "symbol", line));
                     cursor++;
                 }
                 else if (c.equals('\"')) {
                     cursor++;
                     int endQuote = jackCode.indexOf("\"", cursor);
-                    tokenList.add(new Token(jackCode.substring(cursor, endQuote), "STRING_CONST", "stringConstant"));
+                    tokenList.add(new Token(jackCode.substring(cursor, endQuote), "STRING_CONST", "stringConstant", line));
                     cursor = endQuote + 1;
                 }
                 else if (Character.isDigit(c)) {
-                    tokenList.add(new Token(jackCode.substring(cursor, nextSeparator), "INT_CONSTANT", "integerConstant"));
+                    tokenList.add(new Token(jackCode.substring(cursor, nextSeparator), "INT_CONSTANT", "integerConstant", line));
                     cursor = nextSeparator;
                 }
                 else {
                     String sy = jackCode.substring(cursor, nextSeparator);
                     if (keywords.contains(sy))
-                        tokenList.add(new Token(sy, "KEYWORD", "keyword"));
+                        tokenList.add(new Token(sy, "KEYWORD", "keyword", line));
                     else
-                        tokenList.add(new Token(sy, "IDENTIFIER", "identifier")); 
+                        tokenList.add(new Token(sy, "IDENTIFIER", "identifier", line)); 
                     cursor = nextSeparator;
                 }
 
@@ -83,6 +85,9 @@ class JackTokenizer {
         }
         reader.close();
         numTokens = num;
+
+        for (Token k : tokenList)   System.out.println(k);
+
 	}
 
 
@@ -141,7 +146,7 @@ class JackTokenizer {
     }
 
     public String keyword() {
-        return tk.gettag().equals("keyword") ? tk.gettoken() : "";
+        return tk.gettag().equals("keyword") ? tk.gettoken() : null;
     }
 
     public char symbol() {
@@ -149,7 +154,7 @@ class JackTokenizer {
     }
 
     public String identifier() {
-        return tk.gettag().equals("identifier") ? tk.gettoken() : "";
+        return tk.gettag().equals("identifier") ? tk.gettoken() : null;
     }
 
     public int intVal() {
@@ -157,11 +162,15 @@ class JackTokenizer {
     }
 
     public String stringVal() {
-        return tk.gettag().equals("stringConstant") ? tk.gettoken() : "";
+        return tk.gettag().equals("stringConstant") ? tk.gettoken() : null;
     }
 
     public String toXML() {
         return tk.toXML();
+    }
+
+    public String getWord() {
+        return tk.gettoken();
     }
 
     public String toString() {

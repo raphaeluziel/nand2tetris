@@ -10,7 +10,6 @@ class CompilationEngine {
     private final FileWriter writer;
     private final String inputFileName;
     private final JackTokenizer tokenizer;
-    private Token tk;
     private int numTabs = 0;
     private String tabString = "";
 
@@ -32,20 +31,37 @@ class CompilationEngine {
         }
     }
 
-    private void writeXMLnode(String node, boolean type) {
+    private void writeXMLnode(String node, boolean type, String[] words) {
         // type = true if it's an open tag
-        String s = type ? "<" : "</";
+        String s = type ? "< " : "</ ";
+
         try {
-            writer.write(tab() + s + node + ">" + "\n");
+            writer.write(tab() + s + node + " >" + "\n");
         }
         catch (IOException e) {
             System.out.println(e);
         }
     }
 
-    private void writeXMLleaves(String[] arr) {
+    private void writeXMLleaves(int numTokens) {
+
         try {
-            for (int i = 0; i < arr.length; i++) {
+            for (int i = 0; i < numTokens; i++) {
+                String typ = tokenizer.tokenType();
+                String tok = tokenizer.getWord();
+                // Error check that the tokens match what is expected
+                for (int i = 0; i < words.length; i++) {
+                    if (typ.equals("KEYWORD") || typ.equals("SYMBOL")) {
+                        System.out.println("HEY " + typ + " " + tok);
+                        if (tok.equals(words[i]));
+                    }
+                    else {
+                        System.out.println("Syntax error");
+                        System.exit(1);
+                    }
+                }
+
+
                 writer.write(tab() + tokenizer.toXML() + "\n");
                 tokenizer.advance();
             }
@@ -62,39 +78,25 @@ class CompilationEngine {
         }
         return tabString;
     }
-
+    String[] hell = {"hell"};
     public void compileClass() {
-        // 'class' + className + '{' + classVarDec* + subroutineDec* +  '}'
+        // class + className + { + classVarDec* + subroutineDec* +  }
+        String[] arrOpen = { "class", "className", "{" };
         writeXMLnode("class", true);
         numTabs++;
-        String[] arr = { "class", "Main", "{" };
-        writeXMLleaves(arr);
-        compileClassVarDecW();
+        writeXMLleaves(3, arrOpen);
+        compileClassVarDec();
         compileSubroutine();
         numTabs--;
+        String[] arrClose = { "}" };
         writeXMLnode("class", false);
     }
 
     public void compileClassVarDec() {
-        // 'static' or 'field' + 
-        // 'int' or 'char' or 'boolean' or varName + 
-        // (',' + varName*)
-        writeXMLnode("classVarDec", true);
-        numTabs++;
-        String[] arr = { "" };
-        writeXMLleaves(arr);
-        compileClassVarDec();
-        compileSubroutine();
-        numTabs--;
-        writeXMLnode("classVarDec", false);
-    }
-
-    String[] hell = { "POLICE" };
-    public void compileClassVarDecW() {
         try {
             writer.write(tab() + "<classVarDec>\n");
             numTabs++;
-            writeXMLleaves(hell);
+            writeXMLleaves(4, hell);
             numTabs--;
             writer.write(tab() + "</classVarDec>\n");
         }
@@ -107,9 +109,9 @@ class CompilationEngine {
         try {
             writer.write(tab() + "<subroutineDec>\n");
             numTabs++;
-            writeXMLleaves(hell);
+            writeXMLleaves(4, hell);
             compileParameterList();
-            writeXMLleaves(hell);
+            writeXMLleaves(1, hell);
             compileSubroutineBody();
             numTabs--;
             writer.write(tab() + "</subroutineDec>\n");
@@ -123,7 +125,7 @@ class CompilationEngine {
         try {
             writer.write(tab() + "<subroutineBody>\n");
             numTabs++;
-            writeXMLleaves(hell);
+            writeXMLleaves(1, hell);
             compileVarDec();
             numTabs--;
             writer.write(tab() + "</subroutineBody>\n");
@@ -150,7 +152,7 @@ class CompilationEngine {
         try {
             writer.write(tab() + "<varDec>\n");
             numTabs++;
-            writeXMLleaves(hell);
+            writeXMLleaves(4, hell);
             numTabs--;
             writer.write(tab() + "</varDec>\n");
         }
