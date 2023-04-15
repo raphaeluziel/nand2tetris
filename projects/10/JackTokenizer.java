@@ -66,7 +66,7 @@ class JackTokenizer {
                     cursor = endQuote + 1;
                 }
                 else if (Character.isDigit(c)) {
-                    tokenList.add(new Token(jackCode.substring(cursor, nextSeparator), "INT_CONSTANT", "integerConstant", line));
+                    tokenList.add(new Token(jackCode.substring(cursor, nextSeparator), "INT_CONST", "integerConstant", line));
                     cursor = nextSeparator;
                 }
                 else {
@@ -85,9 +85,6 @@ class JackTokenizer {
         }
         reader.close();
         numTokens = num;
-
-        for (Token k : tokenList)   System.out.println(k);
-
 	}
 
 
@@ -169,8 +166,16 @@ class JackTokenizer {
         return tk.toXML();
     }
 
-    public String getWord() {
+    public String getToken() {
         return tk.gettoken();
+    }
+
+    public int getLine() {
+        return tk.getline();
+    }
+
+    public String getFileName() {
+        return filename;
     }
 
     public String toString() {
