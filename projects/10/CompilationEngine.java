@@ -1,8 +1,22 @@
+/******************************************************************************
+ * 
+ * Author: Raphael Uziel
+ * Date: April 17, 2023
+ * 
+******************************************************************************/
+
 import java.util.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.stream.*;
 import java.util.regex.*;
+
+/**
+ * Effects the actual compilation output. Gets its input from a JackTokenizer 
+ * and emits its parsed structure into an output file/stream.
+ * 
+ *  @author Raphael Uziel
+ */
 
 
 class CompilationEngine {
@@ -17,6 +31,7 @@ class CompilationEngine {
     private List<String> unaryOpList = new ArrayList<String>(Arrays.asList("~", "-"));
     private List<String> noSymbolCheckNeeded = Collections.<String>emptyList();
     private List<String> noTypeCheckNeeded = Collections.<String>emptyList();
+    private List<String> keywordConstantList = new ArrayList<String>(Arrays.asList("true", "false", "null", "this"));
     private int numTabs = 0;
     private String tabString = "";
 
@@ -27,6 +42,10 @@ class CompilationEngine {
         tokenizer = jtk;
     }
 
+    /**
+     * This is the method that is called each time another file is given
+     * This is what is called to start the compilation process
+     */
     public void run() {
         tokenizer.reset();
         tokenizer.advance();
@@ -41,6 +60,9 @@ class CompilationEngine {
         }
     }
 
+    /**
+     * Writes the nodes, that is the non terminal branches
+     */
     private void writeXMLnode(String node, boolean type) {
         // type = true if it's an open tag
         String s = type ? "<" : "</";
@@ -55,11 +77,20 @@ class CompilationEngine {
         }
     }
 
+    /**
+     * Outputs an error message and exits if a syntax error is caught
+     */
     private void syntaxError() {
         System.out.println("Syntax error in " + tokenizer.getFileName() + ", line " + tokenizer.getLine() + ": " + tokenizer.getToken());
         System.exit(1);
     }
 
+    /**
+     * Writes the leaves, that is the end tokens, or the terminal language elements
+     * The method takes three parameters, tk, the actual token to write,
+     * check, a list of strings to compare the token to (for checking syntax errors),
+     * and a list of strings to check token types for syntax errors.
+     */
     private void writeXMLleaf(String tk, List<String> check, List<String> checkType) {
 
         // check and checkType are empty if these checks are not required
@@ -78,6 +109,9 @@ class CompilationEngine {
         }
     }
 
+    /**
+     * Formats the XML nicely by setting up tabs
+     */
     private String tab() {
         tabString = "";
         for (int i = 0; i < numTabs; i++) {
@@ -86,119 +120,98 @@ class CompilationEngine {
         return tabString;
     }
 
+    /**
+     * Compiles a whole class
+     * 'class' className '{' classVarDec* subroutineDec* '}'
+     */
     public void compileClass() {
 
         writeXMLnode("class", true);
         
-        // class
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("class"), noTypeCheckNeeded);
 
-        // className (add it to the types list as well)
+        // Add the identifier (className) to the list of types such as int
+        // char, boolean, since a class can also be a type
         if (tokenizer.tokenType().equals("IDENTIFIER")) {
             typeList.add(tokenizer.getToken());
             returnTypeList.add(tokenizer.getToken());
         }
+
         writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, noTypeCheckNeeded);
-
-        // Symbol: '{'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("{"), noTypeCheckNeeded);
-
-        // classVarDec*
         compileClassVarDec();
-
-        // compileSubroutineDec*
         compileSubroutineDec();
-
-        // Symbol: '}'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("}"), noTypeCheckNeeded);
 
         writeXMLnode("class", false);     
     }
 
+    /**
+     * Compiles the class variable declarations
+     * ('static' | 'field') type varName (',' varName)* ';'
+     */
     public void compileClassVarDec() {
 
         List<String> typ = Arrays.asList("static", "field");
 
-        // End recursion
         if (!typ.contains(tokenizer.getToken()))    return;
 
         writeXMLnode("classVarDec", true);
 
-        // 'static' or 'field'
         writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, noTypeCheckNeeded);
-        
-        // type ('int', 'char', 'booean', or className)
         writeXMLleaf(tokenizer.getToken(), noTypeCheckNeeded, noTypeCheckNeeded);
-
-        // varName
         writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, Arrays.asList("IDENTIFIER"));
 
-        // (',' + varName)*
         while (tokenizer.getToken().equals(",")) {
-            // Symbol: ','
             writeXMLleaf(tokenizer.getToken(), Arrays.asList(","), noTypeCheckNeeded);
-            // varName
             writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, Arrays.asList("IDENTIFIER"));
         }
 
-        // ';'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList(";"), noTypeCheckNeeded);
-
         writeXMLnode("classVarDec", false);
 
-        // Recursion for every class variable declaration
         compileClassVarDec();
     }
 
+    /**
+     * Compiles a soubroutine declaration
+     * ('constructor' | 'function' | 'method') ('void' | type)
+     * subroutineName '(' parameterList ')' subroutineBody
+     */
     public void compileSubroutineDec() {
 
         List<String> typ = Arrays.asList("constructor", "function", "method");
 
-        // End recursion
         if (!typ.contains(tokenizer.getToken()))    return;
 
         writeXMLnode("subroutineDec", true);
 
-        // 'constructor', 'function', 'method'
         writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, noTypeCheckNeeded);
-        
-        // 'void' or type ('int', 'char', 'booean', or className)
         writeXMLleaf(tokenizer.getToken(), returnTypeList, noTypeCheckNeeded);
-
-        // subroutineName
         writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, Arrays.asList("IDENTIFIER"));
-
-        // Symbol: '('
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("("), noTypeCheckNeeded);
-
-        // parameterList
         compileParameterList();
-
-        // Symbol: ')'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList(")"), noTypeCheckNeeded);
-
-        // subroutineBody
         compileSubroutineBody();
 
         writeXMLnode("subroutineDec", false);
 
-        // Recursion for every subroutine declaration
         compileSubroutineDec();
     }
 
+    /**
+     * Compile a paremeter list
+     * ((type varName) (',' type varName)*)?
+     */
     public void compileParameterList() {
 
         writeXMLnode("parameterList", true);
-
         // If there are parameters within the parenthesis
         if (!tokenizer.getToken().equals(")")) {
-
             // type ('int', 'char', 'booean', or className)
             writeXMLleaf(tokenizer.getToken(), noTypeCheckNeeded, noTypeCheckNeeded);
-
             // varName
             writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, Arrays.asList("IDENTIFIER"));
-
             // (',' + type + varName)*
             while (tokenizer.getToken().equals(",")) {
                 // Symbol: ','
@@ -213,50 +226,41 @@ class CompilationEngine {
         writeXMLnode("parameterList", false);
     }
 
+    /**
+     * Compile body of subroutine
+     * '{' varDec* statements '}'
+     */
     public void compileSubroutineBody() {
 
         writeXMLnode("subroutineBody", true);
 
-        // Symbol: '{'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("{"), noTypeCheckNeeded);
-
-        // varDec*
         compileVarDec();
-
-        // statements
         compileStatements();
-
-        // Symbol: '}'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("}"), noTypeCheckNeeded);
 
         writeXMLnode("subroutineBody", false);  
     }
 
+    /**
+     * Compile variable declarations
+     * 'var' type varName (',' varName)* ';'
+     */
     public void compileVarDec() {
 
         // If there are no variable declarations return
         if (!tokenizer.getToken().equals("var"))    return;
 
         writeXMLnode("varDec", true);
-
-        // 'var'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("var"), noTypeCheckNeeded);
-
-        // type ('int', 'char', 'booean', or className)
         writeXMLleaf(tokenizer.getToken(), noTypeCheckNeeded, noTypeCheckNeeded);
-
-        // varName
         writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, Arrays.asList("IDENTIFIER"));
 
-        // (',' + varName)*
         while (tokenizer.getToken().equals(",")) {
-            // Symbol: ','
             writeXMLleaf(tokenizer.getToken(), Arrays.asList(","), noTypeCheckNeeded);
-            // varName
             writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, Arrays.asList("IDENTIFIER"));
         }
 
-        // Symbol: ';'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList(";"), noTypeCheckNeeded);
 
         writeXMLnode("varDec", false);
@@ -264,6 +268,10 @@ class CompilationEngine {
         compileVarDec();
     }
 
+    /**
+     * Compile statements
+     * statement*
+     */
     public void compileStatements() {
 
         writeXMLnode("statements", true);
@@ -293,153 +301,125 @@ class CompilationEngine {
         writeXMLnode("statements", false);
     }
 
+    /**
+     * Compile a let statement
+     * 'let' varName ('[' expression ']')? '=' expression ';'
+     */
     public void compileLet() {
 
         writeXMLnode("letStatement", true);
 
-        // 'let'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("let"), noTypeCheckNeeded);
-
-        // varName
         writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, Arrays.asList("IDENTIFIER"));
 
-        // '[' + expression + ']'
+        if (tokenizer.getToken().equals("[")) {
+            writeXMLleaf(tokenizer.getToken(), Arrays.asList("["), noTypeCheckNeeded);
+            compileExpression();
+            writeXMLleaf(tokenizer.getToken(), Arrays.asList("]"), noTypeCheckNeeded);
+        }
 
-        // Symbol: '='
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("="), noTypeCheckNeeded);
-
-        // expression
         compileExpression();
-
-        // Symbol: ';'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList(";"), noTypeCheckNeeded);
 
         writeXMLnode("letStatement", false);
     }
 
+    /**
+     * Compile an if statement
+     * 'if' '(' expression ')' '{' statements '}'
+     * ('else' '{' statements '}')?
+     */
     public void compileIf() {
 
         writeXMLnode("ifStatement", true);
 
-        // 'if'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("if"), noTypeCheckNeeded);
-
-        // Symbol: '('
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("("), noTypeCheckNeeded);
-
-        // expression
         compileExpression();
-
-        // Symbol: ')'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList(")"), noTypeCheckNeeded);
-
-        // Symbol: '{'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("{"), noTypeCheckNeeded);
-
-        // statements
         compileStatements();
-
-        // Symbol: '}'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("}"), noTypeCheckNeeded);
 
-        // ('else' '{' statements '}')?
         if (tokenizer.getToken().equals("else")) {
-            // 'else'
             writeXMLleaf(tokenizer.getToken(), Arrays.asList("else"), noTypeCheckNeeded);
-
-            // Symbol: '{'
             writeXMLleaf(tokenizer.getToken(), Arrays.asList("{"), noTypeCheckNeeded);
-
-            // statements
             compileStatements();
-
-            // Symbol: '}'
             writeXMLleaf(tokenizer.getToken(), Arrays.asList("}"), noTypeCheckNeeded);
         }
 
         writeXMLnode("ifStatement", false);
     }
 
+    /**
+     * Compile a while statement
+     * 'while' '(' expression ')' '{' statements '}'
+     */
     public void compileWhile() {
 
         writeXMLnode("whileStatement", true);
 
-        // 'while'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("while"), noTypeCheckNeeded);
-
-        // Symbol: '('
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("("), noTypeCheckNeeded);
-
-        // expression
         compileExpression();
-
-        // Symbol: ')'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList(")"), noTypeCheckNeeded);
-
-        // Symbol: '{'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("{"), noTypeCheckNeeded);
-
-        // statements
         compileStatements();
-
-        // Symbol: '}'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("}"), noTypeCheckNeeded);
 
         writeXMLnode("whileStatement", false);
     }
 
+    /**
+     * Compile a do statement
+     * 'do' subroutineCall ';'
+     */
     public void compileDo() {
 
         writeXMLnode("doStatement", true);
 
-        // 'do'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("do"), noTypeCheckNeeded);
-
-        // subroutineCall
         subroutineCall();
-
-        // Symbol: ';'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList(";"), noTypeCheckNeeded);
 
         writeXMLnode("doStatement", false);
     }
 
+    /**
+     * Compiles a subroutine
+     * Not sure if needed, but hey, it's here
+     * subroutineName '(' expressionList ')' | 
+     * (className | varName) '.' subroutineName '(' expressionList ')'
+      */
     private void subroutineCall() {
 
-        // subroutineName or className or varName
         writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, Arrays.asList("IDENTIFIER"));
 
         // If a '.' appears now ...
         if (tokenizer.getToken().equals(".")) {
-            // Symbol: '.'
             writeXMLleaf(".", noSymbolCheckNeeded, noTypeCheckNeeded);
-            // subroutineName
             writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, Arrays.asList("IDENTIFIER"));
         }
 
-        // Symbol: '('
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("("), noTypeCheckNeeded);
-
-        // expressionList
         compileExpressionList();
-
-        // Symbol: ')'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList(")"), noTypeCheckNeeded);
     }
 
+    /**
+     * Compiles an expression list
+     * (expression (',' expression)*)?
+     */
     public void compileExpressionList() {
 
         writeXMLnode("expressionList", true);
 
         if (!tokenizer.getToken().equals(")")) {
-            // expression
             compileExpression();
 
-            // (',' + expression)*
             while (tokenizer.getToken().equals(",")) {
-                // Symbol: ','
                 writeXMLleaf(tokenizer.getToken(), Arrays.asList(","), noTypeCheckNeeded);
-                // expression
                 compileExpression();
             }
         }
@@ -447,31 +427,32 @@ class CompilationEngine {
         writeXMLnode("expressionList", false);
     }
 
+    /**
+     * Compiles a return statement
+     * 'return' expression? ';'
+     */
     public void compileReturn() {
 
         writeXMLnode("returnStatement", true);
 
-        // 'return'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList("return"), noTypeCheckNeeded);
-
-        // expression?
         if (!tokenizer.getToken().equals(";")) compileExpression();
-
-        // Symbol: ';'
         writeXMLleaf(tokenizer.getToken(), Arrays.asList(";"), noTypeCheckNeeded);
 
         writeXMLnode("returnStatement", false);
     }
 
+    /**
+     * Compiles an expression
+     * term (op term)*
+     */
     public void compileExpression() {
 
         writeXMLnode("expression", true);
 
-        // term
         compileTerm();
 
-        // (op term)*
-        if (opList.contains(tokenizer.getToken())) {
+        while (opList.contains(tokenizer.getToken())) {
             writeXMLleaf(tokenizer.getToken(), opList, noTypeCheckNeeded);
             compileTerm();
         }
@@ -479,11 +460,66 @@ class CompilationEngine {
         writeXMLnode("expression", false);
     }
 
+    /**
+     * TCompiles a term
+     * integerConstant | stringConstant | keywordConstant | 
+     * varName | varName '[' expression ']' |
+     * subroutineCall |
+     * '(' expression ')' |
+     * unaryOp term
+     */
     public void compileTerm() {
 
         writeXMLnode("term", true);
 
-        writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, noTypeCheckNeeded);
+        // If the current token is an identifier, we must look ahead to the next
+        // token to decide what we are dealing with
+        if (tokenizer.tokenType().equals("IDENTIFIER")) {
+            switch (tokenizer.getNextToken()) {
+
+                // A dot means an identifier with a subroutineCall will be coming
+                case ".":
+                    writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, noTypeCheckNeeded);
+                    writeXMLleaf(".", noSymbolCheckNeeded, noTypeCheckNeeded);
+                    writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, Arrays.asList("IDENTIFIER"));
+                    writeXMLleaf(tokenizer.getToken(), Arrays.asList("("), noTypeCheckNeeded);
+                    compileExpressionList();
+                    writeXMLleaf(tokenizer.getToken(), Arrays.asList(")"), noTypeCheckNeeded);
+                    break;
+
+                // A [ means this is an array
+                case "[":
+                    writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, noTypeCheckNeeded);
+                    writeXMLleaf("[", noSymbolCheckNeeded, noTypeCheckNeeded);
+                    compileExpression();
+                    writeXMLleaf("]", Arrays.asList("]"), noTypeCheckNeeded);
+                    break;
+
+                // This is just a variable
+                default:
+                    writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, noTypeCheckNeeded);
+            }
+        }
+
+        // This is NOT an identifier, but since it is a parenthesis must add an 
+        // expression within the parenthesis
+        else if (tokenizer.getToken().equals("(")) {
+            writeXMLleaf("(", noSymbolCheckNeeded, noTypeCheckNeeded);
+            compileExpression();
+            writeXMLleaf(")", Arrays.asList(")"), noTypeCheckNeeded);
+        }
+
+        // This is NOT an identifier, but it IS a unaryOp
+        else if (unaryOpList.contains(tokenizer.getToken())) {
+            writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, noTypeCheckNeeded);
+            compileTerm();
+        }
+
+        // This is NONE of the options above.  
+        // Not sure if this is even needed
+        else {
+            writeXMLleaf(tokenizer.getToken(), noSymbolCheckNeeded, noTypeCheckNeeded);
+        }
 
         writeXMLnode("term", false);
     }

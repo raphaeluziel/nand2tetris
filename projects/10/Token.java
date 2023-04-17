@@ -1,8 +1,18 @@
+/******************************************************************************
+ * 
+ * Author: Raphael Uziel
+ * Date: April 17, 2023
+ * 
+******************************************************************************/
+
 import java.util.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.stream.*;
 
+/**
+ * Creates a Token class to hold all the information associated with a token
+ */
 
 class Token {
     private final String token;
@@ -37,7 +47,9 @@ class Token {
 }
 
 
-
+/**
+ * These are just lists of keywords and symbols placed here for the tokenizer
+ */
 class KeyWordsAndSymbols {
 
     private static final String[] keywordArray = { "class", "constructor", 

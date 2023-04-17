@@ -1,7 +1,19 @@
+/******************************************************************************
+ * 
+ * Author: Raphael Uziel
+ * Date: April 17, 2023
+ * 
+******************************************************************************/
+
 import java.util.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.stream.*;
+
+/**
+ * Effects the actual compilation output. Gets its input from a JackTokenizer 
+ * and emits its parsed structure into an output file/stream.
+ */
 
 public class JackAnalyzer {
 
@@ -31,8 +43,14 @@ public class JackAnalyzer {
         for (int i = 0; i < numFiles; i++) {
             String inputFileName = inputFileList.get(i).getPath();
             String x = inputFileName;
-            String tokenOutputFileName = "XML/" + x.substring(0, x.indexOf(".")) + "T.xml";
-            String outputFileName = "XML/" + x.substring(0, x.indexOf(".")) + ".xml";
+
+            // For my own testing so as not to interfere with the XML files given as comparisons
+            // String tokenOutputFileName = "XML/" + x.substring(0, x.indexOf(".")) + "T.xml";
+            // String outputFileName = "XML/" + x.substring(0, x.indexOf(".")) + ".xml";
+            
+            // These will output and replace the files provided, so NOT to be used in development
+            String tokenOutputFileName = x.substring(0, x.indexOf(".")) + "T.xml";
+            String outputFileName = x.substring(0, x.indexOf(".")) + ".xml";
 
             try {
                 tokenizerList.add(new JackTokenizer(inputFileList.get(i), inputFileName));
