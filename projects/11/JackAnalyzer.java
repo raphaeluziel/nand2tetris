@@ -17,7 +17,6 @@ import java.util.stream.*;
 
 public class JackAnalyzer {
 
-
     public static void main (String args[]) {
 
         if (args.length != 1) {
@@ -39,21 +38,18 @@ public class JackAnalyzer {
         int numFiles = inputFileList.size();
         FileWriter[] writer = new FileWriter[numFiles];
 
-        // Iterate through each file and generate token XML file for each
+        // Iterate through each file
         for (int i = 0; i < numFiles; i++) {
             String inputFileName = inputFileList.get(i).getPath();
             String x = inputFileName;
 
-            String tokenOutputFileName = x.substring(0, x.indexOf(".")) + "T.xml";
-            String xmlOutputFileName = x.substring(0, x.indexOf(".")) + ".xml";
-            String vmOutputFileName = x.substring(0, x.indexOf(".")) + ".vm";
-
+            String vmOutputFileName = "VMS/" + x.substring(0, x.indexOf(".")) + ".vm";
 
             try {
                 tokenizerList.add(new JackTokenizer(inputFileList.get(i), inputFileName));
                 JackTokenizer tokenizer = tokenizerList.get(i);
 
-                engineList.add(new CompilationEngine(tokenizer, inputFileName, xmlOutputFileName, vmOutputFileName));
+                engineList.add(new CompilationEngine(tokenizer, inputFileName, vmOutputFileName));
             }
             catch (IOException e) {
                 System.out.println(e);

@@ -142,8 +142,10 @@ class JackTokenizer {
      * Advances to the next token, making it the current token of the tokenizer
      */
     public void advance() {
-        if (hasMoreTokens())  tk = tokenList.get(t);
-        t++;
+        if (hasMoreTokens()) {
+            tk = tokenList.get(t);
+            t++;
+        }
     }
 
     /**
@@ -216,15 +218,6 @@ class JackTokenizer {
      */
     public String stringVal() {
         return tk.gettag().equals("stringConstant") ? tk.gettoken() : null;
-    }
-
-    /**
-     * Returns a String which is the XML 
-     * Badly written, but the toXML method is also used in the Token class
-     * Here, it is just being called
-     */
-    public String toXML() {
-        return tk.toXML();
     }
 
     /**

@@ -20,6 +20,7 @@ class VMWriter {
     private final String outputFile;
 
     private final HashMap<String, String> ops;
+    private final HashMap<String, String> segments;
     
 	public VMWriter(String out) throws IOException {
         writer = new FileWriter(out);
@@ -34,6 +35,20 @@ class VMWriter {
         ops.put("&amp;", "and");
         ops.put("|", "or");
         ops.put("~", "not");
+        ops.put("neg", "neg");
+
+        segments = new HashMap<String, String>();
+        segments.put("CONSTANT", "constant");
+        segments.put("LOCAL", "local");
+        segments.put("VAR", "local");
+        segments.put("ARG", "argument");
+        segments.put("ARGUMENT", "argument");
+        segments.put("STATIC", "static");
+        segments.put("TEMP", "temp");
+        segments.put("FIELD", "this");
+        segments.put("THIS", "this");
+        segments.put("THAT", "that");
+        segments.put("POINTER", "pointer");
 	}
 
     private void tryWrite(String code) {
@@ -53,8 +68,9 @@ class VMWriter {
         tryWrite(command.toLowerCase() + " " + label);
     }
 
-    private void writeVM(String command, String segment, int index) {
-        tryWrite(command + " " + segment.toLowerCase() + " " + index);
+    private void writeVM(String command, String seg, int index) {
+        String s = segments.get(seg);
+        tryWrite(command + " " + s + " " + index);
     }
 
     private void writeVM(String command, String name, int numArgs, boolean functionOrCall) {

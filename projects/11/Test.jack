@@ -1,0 +1,22 @@
+class Test {
+
+    static int x, y, z;
+    
+    function void main() {
+
+        while (y < 124) {
+            if (x > 32) {
+                while (z = 0) {
+                    let x = 678;
+                }
+            }
+            else {
+                let x =9;
+            }
+        }
+
+        return;
+      
+    }
+
+}
