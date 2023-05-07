@@ -1,22 +1,12 @@
 class Test {
+   function void main() {
+     var Array a; 
+     var int length;
 
-    static int x, y, z;
-    
-    function void main() {
+     //let a = Array.new(length); 
+     let length = Keyboard.readInt("ddd");
+     let a = Array.new(length); 
 
-        while (y < 124) {
-            if (x > 32) {
-                while (z = 0) {
-                    let x = 678;
-                }
-            }
-            else {
-                let x =9;
-            }
-        }
-
-        return;
-      
-    }
-
+     return;
+   }
 }

@@ -144,6 +144,7 @@ class JackTokenizer {
     public void advance() {
         if (hasMoreTokens()) {
             tk = tokenList.get(t);
+            //System.out.println(tk.gettoken());
             t++;
         }
     }

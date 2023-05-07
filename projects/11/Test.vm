@@ -1,0 +1,37 @@
+function Test.main 3
+push constant 99
+pop local 0
+push constant 107
+pop local 1
+push constant 0
+pop local 2
+label WHILE_EXP0
+push local 0
+push constant 999
+lt
+not
+if-goto WHILE_END0
+label WHILE_EXP1
+push local 0
+push constant 8
+eq
+not
+if-goto WHILE_END1
+push constant 89
+pop local 2
+goto WHILE_EXP1
+label WHILE_END1
+goto WHILE_EXP0
+label WHILE_END0
+label WHILE_EXP2
+push local 2
+push constant 999
+eq
+not
+if-goto WHILE_END2
+push constant 90
+pop local 1
+goto WHILE_EXP2
+label WHILE_END2
+push constant 0
+return

@@ -41,10 +41,15 @@ class CompilationEngine {
     private String tabString;
     private String className;
     private String functionName;
+    private String functionType;
 
+    // This will be for the number of arguments of functions that are NOT defined
+    // by me, thus, the subroutineSymbolTable will have no count of the number
+    // of arguments for these functions, i.e, do Output.printInt(1 + (2 * 3));
     private int nArgs;
 
-    private int labelNum;
+    private int whileLabelNum;
+    private int ifLabelNum;
 
 
     public CompilationEngine(JackTokenizer jtk, String in, String vmout) throws IOException {
@@ -70,7 +75,8 @@ class CompilationEngine {
         numTabs = 0;
         tabString = "";
 
-        labelNum = 1;
+        whileLabelNum = 0;
+        ifLabelNum = 0;
     }
 
     /**
@@ -102,7 +108,7 @@ class CompilationEngine {
         tokenizer.advance();   // '{'
 
         compileClassVarDec();
-        compileSubroutineDec();
+        compileSubroutine();
 
         tokenizer.advance();    // '}'
         writer.close();
@@ -144,14 +150,16 @@ class CompilationEngine {
      * ('constructor' | 'function' | 'method') ('void' | type)
      * subroutineName '(' parameterList ')' subroutineBody
      */
-    public void compileSubroutineDec() {
+    public void compileSubroutine() {
 
         List<String> typ = Arrays.asList("constructor", "function", "method");
 
         if (!typ.contains(tokenizer.getToken()))    return;
 
+        functionType = tokenizer.getToken();
+
         subroutineSymbolTable.reset();
-       
+
         tokenizer.advance();   // ('constructor' | 'function' | 'method') 
         tokenizer.advance();    // ('void' | type)
         functionName = className + "." + tokenizer.getToken();
@@ -159,10 +167,15 @@ class CompilationEngine {
         tokenizer.advance();   // subroutineName 
         tokenizer.advance();    // '('
         compileParameterList();
+        
         tokenizer.advance();    // ')'
+
         compileSubroutineBody();
 
-        compileSubroutineDec();
+        whileLabelNum = 0;
+        ifLabelNum = 0;
+
+        compileSubroutine();
     }
 
     /**
@@ -206,6 +219,17 @@ class CompilationEngine {
         tokenizer.advance();    // '{'
         compileVarDec();
         writer.writeFunction(functionName, subroutineSymbolTable.varCount("VAR"));
+        
+        if (functionType.equals("constructor")) {
+            writer.writePush("CONSTANT", classSymbolTable.varCount("FIELD"));
+            writer.writeCall("Memory.alloc", 1);
+            writer.writePop("POINTER", 0);
+        }
+        else if (functionType.equals("method")) {
+            writer.writePush("ARG", 0);
+            writer.writePop("POINTER", 0);
+            nArgs++;
+        }
         compileStatements();
         tokenizer.advance();    // '}'
     }
@@ -275,27 +299,39 @@ class CompilationEngine {
      * 'let' varName ('[' expression ']')? '=' expression ';'
      */
     public void compileLet() {
-
+        
         tokenizer.advance();    // 'let'
 
         // Memorize the segment and index of the current token
         String s = tokenizer.getToken();
         String seg = classSymbolTable.has(s) ? classSymbolTable.kindOf(s) : subroutineSymbolTable.kindOf(s);
         int index = classSymbolTable.has(s) ?  classSymbolTable.indexOf(s) : subroutineSymbolTable.indexOf(s);
-
+    
         tokenizer.advance();    // varName
 
+        boolean isArray = tokenizer.getToken().equals("[");
+        
         if (tokenizer.getToken().equals("[")) {
             tokenizer.advance();    // '['
             compileExpression();
             tokenizer.advance();    // ']'
+            writer.writePush(seg, index);
+            writer.writeArithmetic("+");  
         }
 
         tokenizer.advance();    // '='
-
-        compileExpression();
         
-        writer.writePop(seg, index);
+        compileExpression();
+
+        if (isArray) {
+            writer.writePop("TEMP", 0);
+            writer.writePop("POINTER", 1);
+            writer.writePush("TEMP", 0);
+            writer.writePop("THAT", 0);
+        }
+        else {
+            writer.writePop(seg, index);
+        }
 
         tokenizer.advance();    // ';'
     }
@@ -306,28 +342,35 @@ class CompilationEngine {
      * ('else' '{' statements '}')?
      */
     public void compileIf() {
-
+        int x = ifLabelNum;
         tokenizer.advance();    // 'if'
         tokenizer.advance();    // '('
         compileExpression();
         tokenizer.advance();    // ')'
-        writer.writeArithmetic("~");
-        writer.writeIf("L" + labelNum);
+        writer.writeIf("IF_TRUE" + x);
+        writer.writeGoto("IF_FALSE" + x);
         tokenizer.advance();    // '{'
-        labelNum += 2;
+        writer.writeLabel("IF_TRUE" + x);
+        ifLabelNum++;
         compileStatements();
-        labelNum -= 2;
+        ifLabelNum--;
         tokenizer.advance();    // '}'
-        writer.writeGoto("L" + (labelNum + 1));
-        writer.writeLabel("L" + labelNum);
 
         if (tokenizer.getToken().equals("else")) {
+            writer.writeGoto("IF_END" + x);
+            writer.writeLabel("IF_FALSE" + x);
             tokenizer.advance();    // 'else'
-            tokenizer.advance();    // '{'
+            tokenizer.advance();    // '{' 
+            ifLabelNum++;
             compileStatements();
+            ifLabelNum--;
+            writer.writeLabel("IF_END" + x);
             tokenizer.advance();    // '}'
         }
-        writer.writeLabel("L" + (labelNum + 1));
+        else {
+            writer.writeLabel("IF_FALSE" + x);
+        }
+        ifLabelNum++;
     }
 
     /**
@@ -335,21 +378,22 @@ class CompilationEngine {
      * 'while' '(' expression ')' '{' statements '}'
      */
     public void compileWhile() {
-
+        int x = whileLabelNum;
         tokenizer.advance();    // 'while'
         tokenizer.advance();    // '('
-        writer.writeLabel("L" + labelNum);
+        writer.writeLabel("WHILE_EXP" + x);
         compileExpression();
         writer.writeArithmetic("~");
-        writer.writeIf("L" + (labelNum + 1));
+        writer.writeIf("WHILE_END" + x);
         tokenizer.advance();    // ')'
         tokenizer.advance();    // '{'
-        labelNum += 2;
+        whileLabelNum++;
         compileStatements();
-        labelNum -= 2;
-        writer.writeGoto("L" + labelNum);
-        writer.writeLabel("L" + (labelNum + 1));
+        whileLabelNum--;
+        writer.writeGoto("WHILE_EXP" + x);
+        writer.writeLabel("WHILE_END" + x);
         tokenizer.advance();    // '}'
+        whileLabelNum++;
     }
 
     /**
@@ -369,9 +413,10 @@ class CompilationEngine {
      */
     public void compileExpressionList() {
 
-        nArgs = 1;
+        nArgs = functionType.equals("method") ? 1 : 0;
 
         if (!tokenizer.getToken().equals(")")) {
+            nArgs++;
             compileExpression();
 
             while (tokenizer.getToken().equals(",")) {
@@ -419,28 +464,56 @@ class CompilationEngine {
      * subroutineCall |
      * '(' expression ')' |
      * unaryOp term
+     * NOTE: a subroutineCall can be any of the following:
+     * subroutineName '(' expressionList ')' OR
+     * className|varName '.' subroutineName '(' expressionList ')' 
      */
     public void compileTerm() {
-
+        
         String tkn = tokenizer.getToken();
+        functionType = "function";
 
         // If the current token is an identifier, we must look ahead to the next
         // token to decide what we are dealing with
         if (tokenizer.tokenType().equals("IDENTIFIER")) {
             
             switch (tokenizer.getNextToken()) {
-
-                // A dot means an identifier with a subroutineCall will be coming
+                // A dot means 
+                // className|varName '.' subroutineName '(' expressionList ')' 
                 case ".":
-                    String fullFunctionName = tokenizer.getToken();
-                    tokenizer.advance();    // className
+                    if (classSymbolTable.has(tkn)) {
+                        writer.writePush(classSymbolTable.kindOf(tkn), classSymbolTable.indexOf(tkn));
+                        functionName = classSymbolTable.typeOf(tkn);
+                        functionType = "method";
+                    }
+                    else if (subroutineSymbolTable.has(tkn)) {
+                        writer.writePush(subroutineSymbolTable.kindOf(tkn), subroutineSymbolTable.indexOf(tkn));
+                        functionName = subroutineSymbolTable.typeOf(tkn);
+                        functionType = "method";
+                    }
+                    else {
+                        // Outside class.  Not in symbol table
+                        functionName = tkn;
+                    }
+
+                    tokenizer.advance();    // className | varName
                     tokenizer.advance();    // '.'
-                    functionName = fullFunctionName + "." + tokenizer.getToken(); 
-                    tokenizer.advance();    // functionName
+
+                    functionName += "." + tokenizer.getToken();
+
+                    if (tokenizer.getToken().equals("new")) {
+                        functionType = "constructor";
+                    }
+                    tokenizer.advance();    // functionName     
                     tokenizer.advance();    // '('
                     compileExpressionList();
-                    writer.writeCall(functionName, nArgs);
                     tokenizer.advance();    // ')'
+
+                    // NOTE: The function call needs to determine how many args
+                    // were pushed, which can be determined when compiling the 
+                    // expressionList
+                    writer.writeCall(functionName, nArgs);
+
                     break;
 
                 // A [ means this is an array
@@ -448,7 +521,24 @@ class CompilationEngine {
                     tokenizer.advance();    // varName
                     tokenizer.advance();    // '['
                     compileExpression();
+                    writer.writePush(subroutineSymbolTable.kindOf(tkn), subroutineSymbolTable.indexOf(tkn));
+                    writer.writeArithmetic("+"); 
+                    writer.writePop("POINTER", 1);
+                    writer.writePush("THAT", 0);
                     tokenizer.advance();    // ']'
+                    break;
+
+                // This is a subroutine method within a class, so it does not have the
+                // '.', example (do draw())
+                case "(":
+                    functionName = className + "." + tkn;
+                    functionType = "method";
+                    tokenizer.advance();    // subroutineName
+                    tokenizer.advance();    // '('
+                    compileExpressionList();
+                    tokenizer.advance();    // ')'
+                    writer.writePush("POINTER", 0);
+                    writer.writeCall(functionName, nArgs);
                     break;
 
                 // This is just a variable
@@ -480,8 +570,8 @@ class CompilationEngine {
         // this is a 'true' or 'false' or 'null' or 'this'
         else if (keywordConstantList.contains(tkn)) {
             if (tkn.equals("true")) {
-                writer.writePush("CONSTANT", 1);
-                writer.writeArithmetic("neg");
+                writer.writePush("CONSTANT", 0);
+                writer.writeArithmetic("~");
             }
             else if (tkn.equals("false") || tkn.equals("null")) {
                 writer.writePush("CONSTANT", 0);
@@ -493,11 +583,21 @@ class CompilationEngine {
         }
 
         // This is an interConstant
-        else {
+        else if (Character.isDigit(tkn.charAt(0))) {
             writer.writePush("CONSTANT", Integer.parseInt(tokenizer.getToken()));
             tokenizer.advance();    // integerConstant
         }
 
+        // This is a stringConstant
+        else {
+            writer.writePush("CONSTANT", tkn.length());
+            writer.writeCall("String.new", 1);
+            for (int i = 0; i < tkn.length(); i++) {
+                writer.writePush("CONSTANT", (int) tkn.charAt(i));
+                writer.writeCall("String.appendChar", 2);
+            }
+            tokenizer.advance();    // stringConstant
+        }
     }
 
 

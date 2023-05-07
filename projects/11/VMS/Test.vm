@@ -1,31 +1,16 @@
-function Test.main 0
-label L1
-push static 1
-push constant 124
-lt
-not
-if-goto L2
-push static 0
-push constant 32
-gt
-not
-if-goto L3
-label L5
-push static 2
-push constant 0
-eq
-not
-if-goto L6
-push constant 678
-pop static 0
-goto L5
-label L6
-goto L4
-label L3
-push constant 9
-pop static 0
-label L4
-goto L1
-label L2
+function Test.main 2
+push constant 3
+call String.new 1
+push constant 100
+call String.appendChar 2
+push constant 100
+call String.appendChar 2
+push constant 100
+call String.appendChar 2
+call Keyboard.readInt 1
+pop local 1
+push local 1
+call Array.new 1
+pop local 0
 push constant 0
 return
