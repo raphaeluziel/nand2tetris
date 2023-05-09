@@ -37,11 +37,7 @@ class CompilationEngine {
     private List<String> noTypeCheckNeeded;
     private List<String> keywordConstantList;
 
-    private int numTabs;
-    private String tabString;
     private String className;
-    private String functionName;
-    private String functionType;
 
     // This will be for the number of arguments of functions that are NOT defined
     // by me, thus, the subroutineSymbolTable will have no count of the number
@@ -71,9 +67,6 @@ class CompilationEngine {
 
         noSymbolCheckNeeded = Collections.<String>emptyList();
         noTypeCheckNeeded = Collections.<String>emptyList();
-        
-        numTabs = 0;
-        tabString = "";
 
         whileLabelNum = 0;
         ifLabelNum = 0;
@@ -111,6 +104,7 @@ class CompilationEngine {
         compileSubroutine();
 
         tokenizer.advance();    // '}'
+        //System.out.println(classSymbolTable);
         writer.close();
     }
 
@@ -156,24 +150,51 @@ class CompilationEngine {
 
         if (!typ.contains(tokenizer.getToken()))    return;
 
-        functionType = tokenizer.getToken();
+        String fType = tokenizer.getToken();
 
         subroutineSymbolTable.reset();
 
+        if (fType.equals("method")) {
+            //System.out.println("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
+            subroutineSymbolTable.define("this", className, "ARG");
+        }
+
         tokenizer.advance();   // ('constructor' | 'function' | 'method') 
         tokenizer.advance();    // ('void' | type)
-        functionName = className + "." + tokenizer.getToken();
+
+        String fName = className + "." + tokenizer.getToken();
 
         tokenizer.advance();   // subroutineName 
         tokenizer.advance();    // '('
         compileParameterList();
-        
         tokenizer.advance();    // ')'
 
-        compileSubroutineBody();
+        //compileSubroutineBody();
+        // '{' varDec* statements '}'
+        tokenizer.advance();    // '{'
+        compileVarDec();
+        
+        writer.writeFunction(fName, subroutineSymbolTable.varCount("VAR"));
+        
+        if (fType.equals("constructor")) {
+            writer.writePush("CONSTANT", classSymbolTable.varCount("FIELD"));
+            writer.writeCall("Memory.alloc", 1);
+            writer.writePop("POINTER", 0);
+        }
+        else if (fType.equals("method")) {
+            writer.writePush("ARG", 0);
+            writer.writePop("POINTER", 0);
+        }
+        compileStatements();
+        tokenizer.advance();    // '}'
 
         whileLabelNum = 0;
         ifLabelNum = 0;
+
+        //if (fName.equals("setDestination")) 
+        //System.out.println("--------------------------------START " + fName);
+        //System.out.println(subroutineSymbolTable);
+        //System.out.println("----------------------------------END " + fName + "\n\n\n\n");
 
         compileSubroutine();
     }
@@ -211,28 +232,6 @@ class CompilationEngine {
         }
     }
 
-    /**
-     * Compile body of subroutine
-     * '{' varDec* statements '}'
-     */
-    public void compileSubroutineBody() {
-        tokenizer.advance();    // '{'
-        compileVarDec();
-        writer.writeFunction(functionName, subroutineSymbolTable.varCount("VAR"));
-        
-        if (functionType.equals("constructor")) {
-            writer.writePush("CONSTANT", classSymbolTable.varCount("FIELD"));
-            writer.writeCall("Memory.alloc", 1);
-            writer.writePop("POINTER", 0);
-        }
-        else if (functionType.equals("method")) {
-            writer.writePush("ARG", 0);
-            writer.writePop("POINTER", 0);
-            nArgs++;
-        }
-        compileStatements();
-        tokenizer.advance();    // '}'
-    }
 
     /**
      * Compile variable declarations
@@ -413,7 +412,7 @@ class CompilationEngine {
      */
     public void compileExpressionList() {
 
-        nArgs = functionType.equals("method") ? 1 : 0;
+        nArgs = 0;
 
         if (!tokenizer.getToken().equals(")")) {
             nArgs++;
@@ -471,7 +470,8 @@ class CompilationEngine {
     public void compileTerm() {
         
         String tkn = tokenizer.getToken();
-        functionType = "function";
+        String fName = "";
+        boolean isMethod = false;
 
         // If the current token is an identifier, we must look ahead to the next
         // token to decide what we are dealing with
@@ -481,38 +481,46 @@ class CompilationEngine {
                 // A dot means 
                 // className|varName '.' subroutineName '(' expressionList ')' 
                 case ".":
+
+                    // This is a varName NOT a className
+                    // It will either be in the subroutineSymbolTable OR
+                    // the classSymbolTable, but either way, the TYPE
+                    // will be the name of a CLASS and this will therefore
+                    // be a METHOD being APPLIED to that varName
+                    
                     if (classSymbolTable.has(tkn)) {
+                        fName = classSymbolTable.typeOf(tkn);
                         writer.writePush(classSymbolTable.kindOf(tkn), classSymbolTable.indexOf(tkn));
-                        functionName = classSymbolTable.typeOf(tkn);
-                        functionType = "method";
+                        isMethod = true;
                     }
                     else if (subroutineSymbolTable.has(tkn)) {
+                        fName = subroutineSymbolTable.typeOf(tkn);
                         writer.writePush(subroutineSymbolTable.kindOf(tkn), subroutineSymbolTable.indexOf(tkn));
-                        functionName = subroutineSymbolTable.typeOf(tkn);
-                        functionType = "method";
+                        isMethod = true;
                     }
+                    // Otherwise this is a className NOT a varName
+                    // It must therefore be a FUNCTION that is being called
+                    // Therefore we DO NOT push the instance
                     else {
-                        // Outside class.  Not in symbol table
-                        functionName = tkn;
+                        fName = tkn;
                     }
+
 
                     tokenizer.advance();    // className | varName
                     tokenizer.advance();    // '.'
 
-                    functionName += "." + tokenizer.getToken();
+                    fName += "." + tokenizer.getToken();
 
-                    if (tokenizer.getToken().equals("new")) {
-                        functionType = "constructor";
-                    }
                     tokenizer.advance();    // functionName     
                     tokenizer.advance();    // '('
                     compileExpressionList();
+                    if (isMethod) nArgs++;
                     tokenizer.advance();    // ')'
 
                     // NOTE: The function call needs to determine how many args
                     // were pushed, which can be determined when compiling the 
                     // expressionList
-                    writer.writeCall(functionName, nArgs);
+                    writer.writeCall(fName, nArgs);
 
                     break;
 
@@ -528,17 +536,20 @@ class CompilationEngine {
                     tokenizer.advance();    // ']'
                     break;
 
-                // This is a subroutine method within a class, so it does not have the
+                // This is a subroutine METHOD within a class, so it does not have the
                 // '.', example (do draw())
                 case "(":
-                    functionName = className + "." + tkn;
-                    functionType = "method";
+                    //System.out.println("THERE "); //-----------------------------------------
+                    fName = className + "." + tkn;
                     tokenizer.advance();    // subroutineName
                     tokenizer.advance();    // '('
-                    compileExpressionList();
-                    tokenizer.advance();    // ')'
                     writer.writePush("POINTER", 0);
-                    writer.writeCall(functionName, nArgs);
+                    compileExpressionList();
+                    nArgs++;
+                    tokenizer.advance();    // ')'
+                    //System.out.println(fName + " " + nArgs);
+                    
+                    writer.writeCall(fName, nArgs);
                     break;
 
                 // This is just a variable
@@ -577,6 +588,7 @@ class CompilationEngine {
                 writer.writePush("CONSTANT", 0);
             }
             else if (tkn.equals("this")) {
+                //System.out.println("HERE "); //------------------------------------------------
                 writer.writePush("POINTER", 0);
             }
             tokenizer.advance();    // 'true' | 'false'
