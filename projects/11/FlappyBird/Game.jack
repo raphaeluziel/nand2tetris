@@ -1,0 +1,170 @@
+// By Raphael Uziel
+// File name: projects/09/FlappyBird/Game.jack
+
+/**
+   * Implements the FlappyBird game.
+   * DESCRIPTION NEEDED
+*/
+
+class Game {
+    static boolean gameover;
+
+    field Pipe pipe, pipe2, pipe3, pipe4;
+    field Bird bird;
+    field int bird_y;
+    field int ms;       // milliseconds
+    field int t;        // seconds
+    field boolean gravity;
+    field int score;
+    field String s;
+
+    /** Constructs a new Flappy Bird Game. */
+    constructor Game new(String grav) {
+        var int i;
+
+        let t = 0;
+        let ms = 0;
+        let score = 0;
+        let gameover = false;
+        let s = "Score: ";
+
+        if (grav.charAt(0) = 89) { let gravity = true; }
+        else                     { let gravity = false; }
+
+        do Screen.drawRectangle(0, 0, 511, 255);
+        do Screen.setColor(false);
+        do Screen.drawRectangle(9, 9, 502, 246);
+        do Screen.setColor(true);
+
+        let bird = Bird.new(gravity);
+
+        let pipe = Pipe.new(bird, 0);
+        let pipe2 = Pipe.new(bird, 0);
+        let pipe3 = Pipe.new(bird, 0);
+
+        return this;
+    }
+
+    method void printScore(int score) {
+        do Output.moveCursor(20, 40);
+        do Output.printString(s);
+        do Output.printInt(score);
+        return;
+    }
+    
+    /** Disposes this game. */
+    method void dispose() {
+        do bird.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Returns the remainder part of x/y */
+    function int mod(int x, int y) {
+        var int q; 
+        let q = Math.divide(x, y);
+        return x - (q*y);
+    }
+
+    function boolean collides(Bird b, Pipe p) {
+
+        var int bx, by, gx, gt, gb;
+
+        let bx = b.getbirdx();
+        let by = b.getbirdy();
+
+        // NOTE: g is for the gap between pipes
+        let gx = p.getpipex();
+        let gt = p.getpipetop();
+        let gb = gt + p.getpipegap();
+
+        // NOTE: bird is 16 px high and 16 px wide
+        // NOTE: pipe / gap are 8 px wide
+        if (((bx+16) > gx) & (bx < (gx+8))) {
+            if (((by+16) > gb) | (by < gt)) {
+                return true;
+            }     
+        }  
+        return false;
+    }
+
+    function boolean fell(Bird b, int score) {
+        if (b.getbirdy() > 231) {
+            let gameover = true;
+        }
+        return false;
+    }
+
+    function boolean movePipe(Pipe p, Bird b, int millisecs, int tim, int start, int score) {
+        // Use the mod function to move the pipe every 10 ms
+        if ((Game.mod(millisecs, 10) = 0) & (tim > start)) {
+            do p.move();
+            if (p.getpipex() < 1) {
+                do p.dispose();
+                let p = Pipe.new(b, millisecs);
+            }
+            if (Game.collides(b, p))  {
+                let gameover = true;
+            }
+        }
+        return false;
+    }
+
+    function void endscreen(int score) {
+        do Sys.wait(1000);
+        do Screen.clearScreen();
+        do Output.moveCursor(10, 25);
+        do Output.printString("GAME OVER");
+        do Output.moveCursor(13, 21);
+        do Output.printString("Final Score: ");
+        do Output.printInt(score);
+        return;
+    }
+
+    /** Runs the game: handles the user's inputs and moves the bird accordingly */
+    method void run() {
+        
+        var char key;           // the key currently pressed by the user
+        var boolean exit;       // Quit the game
+        var int mult;           // Controls speed (used in mod function)
+
+        let exit = false;
+        let gameover = false;
+        let mult = 10;
+        
+        while ((~exit) & (~gameover)) {
+            do Sys.wait(1);
+            let ms = ms + 1;
+            if (Game.mod(ms, 1000) = 0)  { 
+                let t = t + 1;
+                if (Game.mod(t, 3) = 0) { let score = score + 100; }
+            }
+            if (ms = 32000) {
+                let ms = 0;
+            }
+
+            if (gravity) { 
+                do bird.drop(ms);
+                do Game.fell(bird, score);
+            }
+
+            do Game.movePipe(pipe, bird, ms, t, 0, score);
+            do Game.movePipe(pipe2, bird, ms, t, 2, score);
+            do Game.movePipe(pipe3, bird, ms, t, 3, score);
+
+            do printScore(score);
+
+            let key = Keyboard.keyPressed();
+            if (key = 81)  { let exit = true; }    // q key
+            if (key = 131) { do bird.moveUp(); }    // up arrow
+            if (key = 133 & (~gravity)) { do bird.moveDown(); }  // down arrow
+            
+        }
+
+        do Game.endscreen(score);
+
+        return;
+    }
+}
+
+

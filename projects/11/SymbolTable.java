@@ -1,14 +1,14 @@
 /******************************************************************************
  * 
  * Author: Raphael Uziel
- * Date: ???
+ * Date: May 9, 2023
  * 
 ******************************************************************************/
 
 import java.util.*;
 
 /**
- * ???
+ * Creates symbol tables for subroutines and for classes
  */
 
 class SymbolTable {

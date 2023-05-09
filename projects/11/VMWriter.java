@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Author: Raphael Uziel
- * Date: ???
+ * Date: May 9, 2023
  * 
 ******************************************************************************/
 
@@ -11,7 +11,8 @@ import java.nio.file.*;
 import java.util.stream.*;
 
 /**
- * ???
+ * Actually writes to the .vm file all the commands given to it by
+ * the compilation engine
  */
 
 class VMWriter {

@@ -1,0 +1,440 @@
+function Game.new 1
+push constant 11
+call Memory.alloc 1
+pop pointer 0
+push constant 0
+pop this 7
+push constant 0
+pop this 6
+push constant 0
+pop this 9
+push constant 0
+pop static 0
+push constant 7
+call String.new 1
+push constant 83
+call String.appendChar 2
+push constant 99
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+pop this 10
+push argument 0
+push constant 0
+call String.charAt 2
+push constant 89
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+not
+pop this 8
+goto IF_END0
+label IF_FALSE0
+push constant 0
+pop this 8
+label IF_END0
+push constant 0
+push constant 0
+push constant 511
+push constant 255
+call Screen.drawRectangle 4
+pop temp 0
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push constant 9
+push constant 9
+push constant 502
+push constant 246
+call Screen.drawRectangle 4
+pop temp 0
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push this 8
+call Bird.new 1
+pop this 4
+push this 4
+push constant 0
+call Pipe.new 2
+pop this 0
+push this 4
+push constant 0
+call Pipe.new 2
+pop this 1
+push this 4
+push constant 0
+call Pipe.new 2
+pop this 2
+push pointer 0
+return
+function Game.printScore 0
+push argument 0
+pop pointer 0
+push constant 20
+push constant 40
+call Output.moveCursor 2
+pop temp 0
+push this 10
+call Output.printString 1
+pop temp 0
+push this 9
+call Output.printInt 1
+pop temp 0
+push constant 0
+return
+function Game.dispose 0
+push argument 0
+pop pointer 0
+push this 4
+call Bird.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function Game.mod 1
+push argument 0
+push argument 1
+call Math.divide 2
+pop local 0
+push argument 0
+push local 0
+push argument 1
+call Math.multiply 2
+sub
+return
+function Game.collides 5
+push argument 0
+call Bird.getbirdx 1
+pop local 0
+push argument 0
+call Bird.getbirdy 1
+pop local 1
+push argument 1
+call Pipe.getpipex 1
+pop local 2
+push argument 1
+call Pipe.getpipetop 1
+pop local 3
+push local 3
+push argument 1
+call Pipe.getpipegap 1
+add
+pop local 4
+push local 0
+push constant 16
+add
+push local 2
+gt
+push local 0
+push local 2
+push constant 8
+add
+lt
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 1
+push constant 16
+add
+push local 4
+gt
+push local 1
+push local 3
+lt
+or
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push constant 0
+not
+return
+label IF_FALSE1
+label IF_FALSE0
+push constant 0
+return
+function Game.fell 0
+push argument 0
+call Bird.getbirdy 1
+push constant 231
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+not
+pop static 0
+label IF_FALSE0
+push constant 0
+return
+function Game.movePipe 0
+push argument 2
+push constant 10
+call Game.mod 2
+push constant 0
+eq
+push argument 3
+push argument 4
+gt
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push argument 0
+call Pipe.move 1
+pop temp 0
+push argument 0
+call Pipe.getpipex 1
+push constant 1
+lt
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push argument 0
+call Pipe.dispose 1
+pop temp 0
+push argument 1
+push argument 2
+call Pipe.new 2
+pop argument 0
+label IF_FALSE1
+push argument 1
+push argument 0
+call Game.collides 2
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 0
+not
+pop static 0
+label IF_FALSE2
+label IF_FALSE0
+push constant 0
+return
+function Game.endscreen 0
+push constant 1000
+call Sys.wait 1
+pop temp 0
+call Screen.clearScreen 0
+pop temp 0
+push constant 10
+push constant 25
+call Output.moveCursor 2
+pop temp 0
+push constant 9
+call String.new 1
+push constant 71
+call String.appendChar 2
+push constant 65
+call String.appendChar 2
+push constant 77
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 79
+call String.appendChar 2
+push constant 86
+call String.appendChar 2
+push constant 69
+call String.appendChar 2
+push constant 82
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push constant 13
+push constant 21
+call Output.moveCursor 2
+pop temp 0
+push constant 13
+call String.new 1
+push constant 70
+call String.appendChar 2
+push constant 105
+call String.appendChar 2
+push constant 110
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 108
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 83
+call String.appendChar 2
+push constant 99
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push this 9
+call Output.printInt 1
+pop temp 0
+push constant 0
+return
+function Game.run 3
+push argument 0
+pop pointer 0
+push constant 0
+pop local 1
+push constant 0
+pop static 0
+push constant 10
+pop local 2
+label WHILE_EXP0
+push local 1
+not
+push static 0
+not
+and
+not
+if-goto WHILE_END0
+push constant 1
+call Sys.wait 1
+pop temp 0
+push this 6
+push constant 1
+add
+pop this 6
+push this 6
+push constant 1000
+call Game.mod 2
+push constant 0
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 7
+push constant 1
+add
+pop this 7
+push this 7
+push constant 3
+call Game.mod 2
+push constant 0
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push this 9
+push constant 100
+add
+pop this 9
+label IF_FALSE1
+label IF_FALSE0
+push this 6
+push constant 32000
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 0
+pop this 6
+label IF_FALSE2
+push this 8
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push this 4
+push this 6
+call Bird.drop 2
+pop temp 0
+push this 4
+push this 9
+call Game.fell 2
+pop temp 0
+label IF_FALSE3
+push this 0
+push this 4
+push this 6
+push this 7
+push constant 0
+push this 9
+call Game.movePipe 6
+pop temp 0
+push this 1
+push this 4
+push this 6
+push this 7
+push constant 2
+push this 9
+call Game.movePipe 6
+pop temp 0
+push this 2
+push this 4
+push this 6
+push this 7
+push constant 3
+push this 9
+call Game.movePipe 6
+pop temp 0
+push pointer 0
+push this 9
+call Game.printScore 2
+pop temp 0
+call Keyboard.keyPressed 0
+pop local 0
+push local 0
+push constant 81
+eq
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push constant 0
+not
+pop local 1
+label IF_FALSE4
+push local 0
+push constant 131
+eq
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push this 4
+call Bird.moveUp 1
+pop temp 0
+label IF_FALSE5
+push local 0
+push constant 133
+eq
+push this 8
+not
+and
+if-goto IF_TRUE6
+goto IF_FALSE6
+label IF_TRUE6
+push this 4
+call Bird.moveDown 1
+pop temp 0
+label IF_FALSE6
+goto WHILE_EXP0
+label WHILE_END0
+push this 9
+call Game.endscreen 1
+pop temp 0
+push constant 0
+return

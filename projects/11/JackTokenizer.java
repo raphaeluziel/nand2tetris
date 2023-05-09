@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Author: Raphael Uziel
- * Date: April 17, 2023
+ * Date: May 9, 2023
  * 
 ******************************************************************************/
 
@@ -144,7 +144,6 @@ class JackTokenizer {
     public void advance() {
         if (hasMoreTokens()) {
             tk = tokenList.get(t);
-            //System.out.println(tk.gettoken());
             t++;
         }
     }

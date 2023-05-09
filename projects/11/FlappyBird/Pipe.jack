@@ -1,0 +1,66 @@
+// By Raphael Uziel
+// File name: projects/09/FlappyBird/Pipe.jack
+
+/** Implements a graphical pipe */
+class Pipe {
+
+    field int x;        // X position of pipe
+    field int w;        // Width of pipe
+    field int top;      // Top of gap
+    field int gap;      // Gap opening length
+    field int border;   // Border width
+    field Bird bird;
+
+    /** Constructs a new Pipe with a given location. */
+    constructor Pipe new(Bird b, int seed) {
+        let x = 503;
+        let w = 8;
+        let border = 9;
+        let bird = b;
+
+        do Random.setSeed(seed);
+        let top = 30 + Random.randRange(140);
+        let gap = 20 + Random.randRange(60);
+
+        do draw();
+        return this;
+    }
+
+    /** Disposes this square. */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void draw() {
+        do Screen.setColor(true);
+        do Screen.drawRectangle(x, border, x+w, top);
+        do Screen.drawRectangle(x, top+gap, x+w, 255-border);
+        return;
+    }
+
+    method void erase() {
+        if (x < (503-border+1)) {
+            do Screen.setColor(false);
+            do Screen.drawRectangle(x, border, x+w, top);
+            do Screen.drawRectangle(x, top+gap, x+w, 255-border);
+        }
+      
+        return;
+    }
+
+    method int getpipex() { return x; }
+    method int getpipewidth() { return w; }
+    method int getpipetop() { return top; }
+    method int getpipegap() { return gap; }
+
+    /** Moves the pipe left. */
+    method void move() {    
+        do erase();
+        let x = x - 1;
+        do draw();
+
+        return;
+    }
+
+}

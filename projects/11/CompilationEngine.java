@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Author: Raphael Uziel
- * Date: April 17, 2023
+ * Date: May 9, 2023
  * 
 ******************************************************************************/
 
@@ -104,7 +104,7 @@ class CompilationEngine {
         compileSubroutine();
 
         tokenizer.advance();    // '}'
-        //System.out.println(classSymbolTable);
+
         writer.close();
     }
 
@@ -155,7 +155,6 @@ class CompilationEngine {
         subroutineSymbolTable.reset();
 
         if (fType.equals("method")) {
-            //System.out.println("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
             subroutineSymbolTable.define("this", className, "ARG");
         }
 
@@ -190,11 +189,6 @@ class CompilationEngine {
 
         whileLabelNum = 0;
         ifLabelNum = 0;
-
-        //if (fName.equals("setDestination")) 
-        //System.out.println("--------------------------------START " + fName);
-        //System.out.println(subroutineSymbolTable);
-        //System.out.println("----------------------------------END " + fName + "\n\n\n\n");
 
         compileSubroutine();
     }
@@ -539,7 +533,6 @@ class CompilationEngine {
                 // This is a subroutine METHOD within a class, so it does not have the
                 // '.', example (do draw())
                 case "(":
-                    //System.out.println("THERE "); //-----------------------------------------
                     fName = className + "." + tkn;
                     tokenizer.advance();    // subroutineName
                     tokenizer.advance();    // '('
@@ -547,7 +540,6 @@ class CompilationEngine {
                     compileExpressionList();
                     nArgs++;
                     tokenizer.advance();    // ')'
-                    //System.out.println(fName + " " + nArgs);
                     
                     writer.writeCall(fName, nArgs);
                     break;

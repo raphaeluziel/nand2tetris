@@ -1,7 +1,7 @@
 /******************************************************************************
  * 
  * Author: Raphael Uziel
- * Date: April 17, 2023
+ * Date: May 9, 2023
  * 
 ******************************************************************************/
 
@@ -12,7 +12,8 @@ import java.util.stream.*;
 
 /**
  * Effects the actual compilation output. Gets its input from a JackTokenizer 
- * and emits its parsed structure into an output file/stream.
+ * and emits its parsed structure into an output file/stream.  This is the actual
+ * compiler that starts the whole process
  */
 
 public class JackCompiler {
