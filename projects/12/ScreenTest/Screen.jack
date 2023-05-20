@@ -1,0 +1,238 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Screen.jack
+
+/**
+ * A library of functions for displaying graphics on the screen.
+ * The Hack physical screen consists of 256 rows (indexed 0..255, top to bottom)
+ * of 512 pixels each (indexed 0..511, left to right). The top left pixel on 
+ * the screen is indexed (0,0).
+ */
+class Screen {
+
+    static Array byte;
+    static boolean color;
+
+    /** Initializes the Screen. */
+    function void init() {
+
+        let color = true;
+
+        let byte = Array.new(16);
+
+        let byte[0] = 1;
+        let byte[1] = 2;
+        let byte[2] = 4;
+        let byte[3] = 8;
+
+        let byte[4] = 16;
+        let byte[5] = 32;
+        let byte[6] = 64;
+        let byte[7] = 128;
+
+        let byte[8] = 256;
+        let byte[9] = 512;
+        let byte[10] = 1024;
+        let byte[11] = 2048;
+
+        let byte[12] = 4096;
+        let byte[13] = 8192;
+        let byte[14] = 16384;
+        let byte[15] = 32767 + 1;    // 16-byte 1000 0000 0000 0000 = -327678 = 32767 + 1
+
+        return;
+    }
+
+    /** Erases the entire screen. */
+    function void clearScreen() {
+        // NOTE: Screen map is from 16384 to 24575
+        var int address;
+        let address = 16384;
+
+        do Screen.setColor(false);
+
+        while (address < 24576) {
+            do Memory.poke(address, 0);
+            let address = address + 1;
+        }
+
+        do Screen.setColor(true);
+
+        return;
+    }
+
+    /** Sets the current color, to be used for all subsequent drawXXX commands.
+     *  Black is represented by true, white by false. */
+    function void setColor(boolean b) {
+        if (b) { let color = true;  }
+        else   { let color = false; }
+        return;
+    }
+
+    /** Draws the (x,y) pixel, using the current color. */
+    function void drawPixel(int x, int y) {
+
+        var int address, value, xMod16, xDiv16, yMul32, baseAddress;
+
+        let xDiv16 = x/16;
+        let xMod16 = x - (xDiv16 * 16);
+        let yMul32 = y*32;
+
+        let baseAddress = 16384;
+
+        let address = baseAddress + yMul32 + xDiv16;
+        if (color) {
+            let value = Memory.peek(address) | byte[xMod16];
+        }
+        else {
+            let value = Memory.peek(address) & (~byte[xMod16]);
+        }
+
+        do Memory.poke(address, value);
+        
+        return;
+    }
+
+    /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
+    function void drawLine(int x1, int y1, int x2, int y2) {
+        var int a, b, dx, dy, diff;
+
+        var int address, value, xMod16, xDiv16, yMul32, baseAddress;
+        var int xMax, xMin, yMax, yMin, xDiv16Max, xDiv16Min, xMod16Max, xMod16Min;
+        var int orBits;  // int that will be or'd with peek val to get new val
+        var int lastAddress;    // int needed for vertical lines
+
+        let a = 0;
+        let b = 0;
+        let diff = 0;
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+
+        // Lines going southeast
+        if (((dx > 0)) & (dy > 0)) {
+            while (((a < dx) | (a = dx)) & ((b < dy) | (b = dy))) {
+                do Screen.drawPixel(x1+a, y1+b);
+                if (diff > 0) { let a = a + 1; let diff = diff - dy; }
+                else          { let b = b + 1; let diff = diff + dx; }
+            }
+            return;
+        }
+
+        // Lines going southwest
+        if (((dx < 0)) & (dy > 0)) {
+            while (((a > dx) | (a = dx)) & ((b < dy) | (b = dy))) {
+                do Screen.drawPixel(x1+a, y1+b);
+                if (diff > 0) { let a = a - 1; let diff = diff - dy; }
+                else          { let b = b + 1; let diff = diff - dx; }
+            }
+            return;
+        }
+
+        // Lines going northeast
+        if (((dx > 0)) & (dy < 0)) {
+            while (((a < dx) | (a = dx)) & ((b > dy) | (b = dy))) {
+                do Screen.drawPixel(x1+a, y1+b);
+                if (diff > 0) { let a = a + 1; let diff = diff + dy; }
+                else          { let b = b - 1; let diff = diff + dx; }
+            }
+            return;
+        }
+
+        // Lines going northwest
+        if (((dx < 0)) & (dy < 0)) {
+            while (((a > dx) | (a = dx)) & ((b > dy) | (b = dy))) {
+                do Screen.drawPixel(x1+a, y1+b);
+                if (diff > 0) { let a = a - 1; let diff = diff + dy; }
+                else          { let b = b - 1; let diff = diff - dx; }
+            }
+            return;
+        }
+
+        let yMul32 = y1*32;
+        let baseAddress = 16384;
+        let xMin = Math.min(x1, x2);
+        let xMax = Math.max(x1, x2);
+
+        let xDiv16Min = xMin/16;
+        let xMod16Min = xMin - (xDiv16Min * 16);
+        let xDiv16Max = xMax/16;
+        let xMod16Max = xMax - (xDiv16Max * 16);
+
+        // Horizontal line
+        if (dy = 0) {
+
+            // Draw beginning of line
+            let address = baseAddress + yMul32 + xDiv16Min;
+            let orBits = -byte[xMod16Min];
+            let value = Memory.peek(address) | orBits;
+            do Memory.poke(address, value);
+            //let address = address + 1;
+
+            do Output.printInt(address);
+            do Output.println();
+            // Draw middle of line
+            while (address < (baseAddress + yMul32 + xDiv16Max)) {
+                let address = address + 1;
+                do Memory.poke(address, -1);
+            }
+            //do Output.printInt(address);
+            //do Output.println();
+
+            // Draw end of line
+            let address = baseAddress + yMul32 + xDiv16Max;
+            //do Output.printInt(address);
+            //do Output.println();
+            let orBits = byte[xMod16Max] + byte[xMod16Max] - 1;
+            let value = Memory.peek(address) | orBits;
+            do Memory.poke(address, value);
+        }
+
+        // Vertical lines
+        if (dx = 0) {
+            let yMax = Math.max(y1, y2);
+            let yMin = Math.min(y1, y2);
+            let xDiv16 = x1/16;
+            let xMod16 = x1 - (xDiv16 * 16);
+            let address = baseAddress + (yMin*32) + xDiv16;
+            let lastAddress = baseAddress + (yMax*32) + xDiv16;
+            let orBits = byte[xMod16];
+            while (address < lastAddress) {
+                let value = Memory.peek(address) | orBits;
+                do Memory.poke(address, value);
+                let address = address + 32;
+            }
+        }
+
+        return;
+    }
+
+    /** Draws a filled rectangle whose top left corner is (x1, y1)
+     * and bottom right corner is (x2,y2), using the current color. */
+    function void drawRectangle(int x1, int y1, int x2, int y2) {
+        var int y;
+        let y = y1;
+        while (y < (y2+1)) {
+            do Screen.drawLine(x1, y, x2, y);
+            let y = y + 1;
+        }
+        return;
+    }
+
+    /** Draws a filled circle of radius r<=181 around (x,y), using the current color. */
+    function void drawCircle(int x, int y, int r) {
+
+        var int dx, dy, rSq;
+
+        let dy = -r;
+        let rSq = r * r;       
+
+        while (dy < (r + 1)) {
+            let dx = Math.sqrt(rSq - (dy*dy));
+            do Screen.drawLine(x-dx, y+dy, x+dx, y+dy);
+            let dy = dy + 1;
+        }
+
+        return;
+    }
+}
