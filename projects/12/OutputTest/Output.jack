@@ -18,15 +18,17 @@ class Output {
 
     // Character map for displaying characters
     static Array charMaps;
-    static int x, y;    // Cursor position 
-    static int address; // Cursor top left address
+    static int cx, cy;    // Current cursor position 
+    static int baseAddy;
+    static int address; // Current cursor address
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
 
-        let x = 0;
-        let y = 0;
-        let address = 16384;    // Base address of screen
+        let cx = 0;
+        let cy = 0;
+        let baseAddy = 16384;
+        let address = baseAddy;
 
         do Output.initMap();
 
@@ -81,7 +83,7 @@ class Output {
         do Output.create(64,30,51,51,59,59,59,27,3,30,0,0);  // @
         do Output.create(63,30,51,51,24,12,12,0,12,12,0,0);  // ?
 
-        do Output.create(65,0,0,0,0,0,0,0,0,0,0,0);          // A ** TO BE FILLED **
+        do Output.create(65,12,30,51,51,51,63,51,51,51,0,0); // A ** TO BE FILLED **
         do Output.create(66,31,51,51,51,31,51,51,51,31,0,0); // B
         do Output.create(67,28,54,35,3,3,3,35,54,28,0,0);    // C
         do Output.create(68,15,27,51,51,51,51,51,27,15,0,0); // D
@@ -186,7 +188,20 @@ class Output {
     /** Moves the cursor to the j-th column of the i-th row,
      *  and erases the character displayed there. */
     function void moveCursor(int i, int j) {
+        // NOTE: They are using i as the Y
+        let cx = j;
+        let cy = i;
         return;
+    }
+
+    // Gets the address of the block where cursor lies
+    function int getCursorAddy(int i, int j) {
+        return (352*j) + (i/2) + baseAddy;
+    }
+
+    // Returns 0 if number is even, or 1 if odd
+    function int parity(int i) {
+        return (i & 1);
     }
 
     /** Displays the given character at the cursor location,
@@ -194,42 +209,92 @@ class Output {
     function void printChar(char c) {
         
         var Array character;
-        var int j, value;
-        let character = Output.getMap(50);
+        var int value, j;
         let j = 0;
 
-        do Output.printInt(c);
+        let character = Output.getMap(c);
+        let address = Output.getCursorAddy(cx, cy); // initial address of cursor
 
         while (j < 11) {
-            do Output.printInt(j);
-            let value = Memory.peek(address);
-            let value = value | character[j];
-            do Memory.poke(address, value);
-            let address = address + 32;
+            
+            // Even - fill up first part of memory block
+            if (Output.parity(cx) = 0) {
+                let value = Memory.peek(address);
+                // Clear left side of memory block (-256 = 1111 1111 0000 0000)
+                let value = value & (-256);
+                // Now add the character map to the value
+                let value = value | character[j];
+                // Set the j line of the character onto the screen map
+                do Memory.poke(address, value);
+                let address = address + 32;
+            }
+            // Odd - fill up second part of memory block
+            else {
+                let value = Memory.peek(address);
+                // Clear right side of memory block (-256 = 1111 1111 0000 0000)
+                let value = value & (255);
+                // First shift the character bits 8 places by * 256
+                // Now add the character map to the value
+                let value = value | (256 * character[j]);
+                // Set the j line of the character onto the screen map
+                do Memory.poke(address, value);
+                let address = address + 32;
+            }
             let j = j + 1;
         }
+
+        // Move cursor one place to the right if there is space,
+        // to the start of the next line if there is not
+        if (cx < 63) { let cx = cx + 1; }
+        else { do Output.println(); }
+
         return;
     }
 
     /** displays the given string starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printString(String s) {
+        var int i, len;
+
+        let i = 0;
+        let len = s.length();
+
+        while (i < len) {
+            do Output.printChar(s.charAt(i));
+            let i = i + 1;
+        }
+
         return;
     }
 
     /** Displays the given integer starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printInt(int i) {
+        var String s;
+
+        let s = String.new(6);  // Maximum space would be for -32768
+        do s.setInt(i);         // Sets the string to hold the int as a string
+        do Output.printString(s);
+
         return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
+        let cx = 0;
+        if (cy < 22) { let cy = cy + 1; }
+        else         { let cy = 0; }
         return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
+        if (cx > 0) { let cx = cx - 1; }
+        else { 
+            if (cy > 0) {
+                let cy = cy - 1;
+            } 
+        }
         return;
     }
 }
