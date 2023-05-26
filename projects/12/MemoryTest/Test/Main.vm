@@ -1,0 +1,104 @@
+function Main.main 5
+push constant 17000
+pop local 4
+push constant 4000
+call Array.new 1
+pop local 1
+push constant 0
+push local 1
+add
+push constant 7777
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 1
+push local 1
+add
+push constant 666
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 2
+push local 1
+add
+push constant 55
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 1
+call Output.printInt 1
+pop temp 0
+call Output.println 0
+pop temp 0
+push constant 100
+call Array.new 1
+pop local 2
+push constant 0
+push local 2
+add
+push constant 2727
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 1
+push local 2
+add
+push constant 1313
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 2
+push local 2
+add
+push constant 5959
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 2
+call Output.printInt 1
+pop temp 0
+call Output.println 0
+pop temp 0
+push constant 10
+call Array.new 1
+pop local 3
+push constant 0
+push local 3
+add
+push constant 6
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 1
+push local 3
+add
+push constant 6
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 2
+push local 3
+add
+push constant 6
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 3
+call Output.printInt 1
+pop temp 0
+call Output.println 0
+pop temp 0
+push local 2
+call Array.dispose 1
+pop temp 0
+push constant 0
+return

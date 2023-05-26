@@ -43,41 +43,37 @@ class Memory {
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
     function int alloc(int size) {
-        var int next;
-        var int block;
-        var int segmentSize;
 
-        let next = freeList;        // Start next at beginning of freeList
-        // Move through this linked list until memory found
-        while (next > 0) {
-            if (ram[next+1] > (size + 1)) {
-                // Reduce size of free block by the amount needed for allocation
-                let segmentSize = ram[next+1] - (size + 2);
-                let heap[next+1] = segmentSize;
-                
-                let next = next + segmentSize + 2;   // Move pointer to newly allocated block start
-                let heap[next] = 0;                  // Set next pointer of the block to 0 (no longer free)
-                let heap[next+1] = size;             // Set size of block
+        var int addy, next, freeSize, blockAddy;
 
-                let block = next+2;
-                //do Output.printInt(block);
-                //do Output.println();
+        let addy = freeList;
+        let next = ram[addy];
+        let freeSize = ram[addy+1];
+        
+        while (true) {
+            if (ram[addy+1] > (size+2)) {
+                let blockAddy = addy+2;
+                let ram[addy] = 0;
+                let ram[addy+1] = size;
+                let freeList = addy + size + 2;
+                let ram[freeList] = next;
+                let ram[freeList+1] = freeSize - (size+2);
+                return blockAddy;
             }
             else {
-                let next = heap[next];
-                //do Output.printInt(next);
-                //do Output.println();
+                let addy = ram[addy];
             }
         }
-        return block;
+
+        do Output.printString("ERROR");
+        return -1;  // ERROR
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
 
-        let heap[lastFreeAddy] = o;
-        let lastFreeAddy = o; 
+        let ram[freeList] = o-2;
 
         return;
     }    
