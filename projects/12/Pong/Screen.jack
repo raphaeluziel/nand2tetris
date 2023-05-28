@@ -11,16 +11,21 @@
  */
 class Screen {
 
-    static Array byte;
+    static Array byte, first, end;
     static boolean color;
 
     /** Initializes the Screen. */
     function void init() {
 
+        var int i;
+
         let color = true;
 
         let byte = Array.new(16);
+        let first = Array.new(16);
+        let end = Array.new(16);
 
+        // Used by drawPixel
         let byte[0] = 1;
         let byte[1] = 2;
         let byte[2] = 4;
@@ -41,6 +46,21 @@ class Screen {
         let byte[14] = 16384;
         let byte[15] = ~32767;    // 16-byte 1000 0000 0000 0000 = ~(0111 1111 1111 1111)
 
+        // Used by drawHorizontalLine for short lines that do not span two address blocks
+        let i = 0;
+        while (i < 16) {
+            let first[i] = -byte[i];
+            let i = i + 1;
+        }      
+        let i = 13;
+        let end[0] = 1;
+        let end[14] = byte[15];
+        let end[15] = -1;
+        while (i > 0) {
+            let end[i] = byte[i+1] - 1;
+            let i = i - 1;
+        }  
+        
         return;
     }
 
@@ -226,12 +246,16 @@ class Screen {
                 }
             }
             else {
-                let x = x1;
-                while (x < (x2+1)) {
-                    do Screen.drawPixel(x, y);
-                    let x = x + 1;
+                let orBits = first[xMod16Min] & end[xMod16Max];
+                if (col = 0) {
+                    let value = Memory.peek(startAddy) & (~orBits);
                 }
+                else {
+                    let value = Memory.peek(startAddy) | orBits;
+                }
+                do Memory.poke(startAddy, value);
             }
+            
             let reps = reps + 1;
             let startAddy = startAddy + 32;
             let endAddy = endAddy + 32;
@@ -271,10 +295,7 @@ class Screen {
     /** Draws a filled rectangle whose top left corner is (x1, y1)
      * and bottom right corner is (x2,y2), using the current color. */
     function void drawRectangle(int x1, int y1, int x2, int y2) {
-        var int y;
-        
-        do Screen.drawHorizontalLine(x1, x2, y1, (y2-y1), color);
-        
+        do Screen.drawHorizontalLine(x1, x2, y1, (y2-y1), color); 
         return;
     }
 

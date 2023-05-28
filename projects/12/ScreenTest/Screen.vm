@@ -1,10 +1,16 @@
-function Screen.init 0
+function Screen.init 1
 push constant 0
 not
-pop static 1
+pop static 3
 push constant 16
 call Array.new 1
 pop static 0
+push constant 16
+call Array.new 1
+pop static 1
+push constant 16
+call Array.new 1
+pop static 2
 push constant 0
 push static 0
 add
@@ -135,6 +141,92 @@ pop pointer 1
 push temp 0
 pop that 0
 push constant 0
+pop local 0
+label WHILE_EXP0
+push local 0
+push constant 16
+lt
+not
+if-goto WHILE_END0
+push local 0
+push static 1
+add
+push local 0
+push static 0
+add
+pop pointer 1
+push that 0
+neg
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 13
+pop local 0
+push constant 0
+push static 2
+add
+push constant 1
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 14
+push static 2
+add
+push constant 15
+push static 0
+add
+pop pointer 1
+push that 0
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 15
+push static 2
+add
+push constant 1
+neg
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+label WHILE_EXP1
+push local 0
+push constant 0
+gt
+not
+if-goto WHILE_END1
+push local 0
+push static 2
+add
+push local 0
+push constant 1
+add
+push static 0
+add
+pop pointer 1
+push that 0
+push constant 1
+sub
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push local 0
+push constant 1
+sub
+pop local 0
+goto WHILE_EXP1
+label WHILE_END1
+push constant 0
 return
 function Screen.clearScreen 1
 push constant 16384
@@ -171,11 +263,11 @@ goto IF_FALSE0
 label IF_TRUE0
 push constant 0
 not
-pop static 1
+pop static 3
 goto IF_END0
 label IF_FALSE0
 push constant 0
-pop static 1
+pop static 3
 label IF_END0
 push constant 0
 return
@@ -202,7 +294,7 @@ add
 push local 3
 add
 pop local 0
-push static 1
+push static 3
 if-goto IF_TRUE0
 goto IF_FALSE0
 label IF_TRUE0
@@ -235,7 +327,7 @@ pop temp 0
 push constant 0
 return
 function Screen.drawLine 23
-push static 1
+push static 3
 if-goto IF_TRUE0
 goto IF_FALSE0
 label IF_TRUE0
@@ -668,7 +760,7 @@ push constant 1
 add
 pop local 2
 push local 2
-push static 1
+push static 3
 call Memory.poke 2
 pop temp 0
 goto WHILE_EXP1
@@ -734,26 +826,42 @@ pop temp 0
 label IF_FALSE2
 goto IF_END0
 label IF_FALSE0
-push argument 0
-pop local 14
-label WHILE_EXP2
-push local 14
-push argument 1
-push constant 1
+push local 11
+push static 1
 add
-lt
+pop pointer 1
+push that 0
+push local 10
+push static 2
+add
+pop pointer 1
+push that 0
+and
+pop local 12
+push argument 4
+push constant 0
+eq
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push local 0
+call Memory.peek 1
+push local 12
 not
-if-goto WHILE_END2
-push local 14
-push argument 2
-call Screen.drawPixel 2
+and
+pop local 3
+goto IF_END4
+label IF_FALSE4
+push local 0
+call Memory.peek 1
+push local 12
+or
+pop local 3
+label IF_END4
+push local 0
+push local 3
+call Memory.poke 2
 pop temp 0
-push local 14
-push constant 1
-add
-pop local 14
-goto WHILE_EXP2
-label WHILE_END2
 label IF_END0
 push local 15
 push constant 1
@@ -868,7 +976,7 @@ push argument 1
 push argument 3
 push argument 1
 sub
-push static 1
+push static 3
 call Screen.drawHorizontalLine 5
 pop temp 0
 push constant 0
