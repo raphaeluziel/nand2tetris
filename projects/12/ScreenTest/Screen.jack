@@ -154,7 +154,29 @@ class Screen {
             return;
         }
 
-        let yMul32 = y1*32;
+        // Horizontal line
+        if (dy = 0) {
+            do Screen.drawHorizontalLine(x1, x2, y1, 1, col);
+        }
+
+        // Vertical lines
+        if (dx = 0) {
+            do Screen.drawVerticalLine(x1, y1, y2, col);
+        }
+
+        return;
+    }
+
+    function void drawHorizontalLine(int x1, int x2, int y, int repeats, int col) {
+
+        var int startAddy, endAddy, address, value, yMul32, baseAddress;
+        var int xMax, xMin, xDiv16Max, xDiv16Min, xMod16Max, xMod16Min;
+        var int orBits;  // int that will be or'd with peek val to get new val
+        var int lastAddress;    // int needed for vertical lines
+        var int x;  // To iterate through x value in drawing horizontal lines
+        var int reps;
+
+        let yMul32 = y*32;
         let baseAddress = 16384;
         let xMin = Math.min(x1, x2);
         let xMax = Math.max(x1, x2);
@@ -164,75 +186,85 @@ class Screen {
         let xDiv16Max = xMax/16;
         let xMod16Max = xMax - (xDiv16Max * 16);
 
-        // Horizontal line
-        if (dy = 0) {
+        let reps = 0;
+
+        let startAddy = baseAddress + yMul32 + xDiv16Min;
+        let endAddy = baseAddress + yMul32 + xDiv16Max;
+        let address = startAddy;
+
+        while (reps < repeats) {
             
-            if (xDiv16Max > xDiv16Min) {
+            if (xDiv16Max > xDiv16Min) {             
                 // Draw beginning of line
-                let address = baseAddress + yMul32 + xDiv16Min;
                 if (col = 0) {
                     let orBits = ~(-byte[xMod16Min]);
-                    let value = Memory.peek(address) & orBits;
+                    let value = Memory.peek(startAddy) & orBits;
                 }
                 else {
                     let orBits = (-byte[xMod16Min]);
-                    let value = Memory.peek(address) | orBits;
+                    let value = Memory.peek(startAddy) | orBits;
                 }
-                do Memory.poke(address, value);
+                do Memory.poke(startAddy, value);
                 
                 // Draw middle of line
-                while (address < (baseAddress + yMul32 + xDiv16Max - 1)) {
+                while (address < (endAddy - 1)) {
                     let address = address + 1;
                     do Memory.poke(address, color);
                 }
                 
                 // Draw end of line
                 if (xMod16Max > 0) {
-                    let address = baseAddress + yMul32 + xDiv16Max;
                     if (col = 0) {
                         let orBits = ~(byte[xMod16Max] + byte[xMod16Max] - 1);
-                        let value = Memory.peek(address) & orBits;
+                        let value = Memory.peek(endAddy) & orBits;
                     }
                     else {
                         let orBits = (byte[xMod16Max] + byte[xMod16Max] - 1);
-                        let value = Memory.peek(address) | orBits;
+                        let value = Memory.peek(endAddy) | orBits;
                     }
-                    do Memory.poke(address, value);
+                    do Memory.poke(endAddy, value);
                 }
             }
             else {
                 let x = x1;
                 while (x < (x2+1)) {
-                    do Screen.drawPixel(x, y1);
+                    do Screen.drawPixel(x, y);
                     let x = x + 1;
                 }
             }
-            
-            /*
-            let x = x1;
-            while (x < (x2+1)) {
-                do Screen.drawPixel(x, y1);
-                let x = x + 1;
-            }
-            */
+            let reps = reps + 1;
+            let startAddy = startAddy + 32;
+            let endAddy = endAddy + 32;
+            let address = startAddy;
         }
+        
+        return;
+    }
 
-        // Vertical lines
-        if (dx = 0) {
-            let yMax = Math.max(y1, y2);
-            let yMin = Math.min(y1, y2);
-            let xDiv16 = x1/16;
-            let xMod16 = x1 - (xDiv16 * 16);
-            let address = baseAddress + (yMin*32) + xDiv16;
-            let lastAddress = baseAddress + (yMax*32) + xDiv16;
-            let orBits = byte[xMod16] & col;
-            while (address < lastAddress) {
-                let value = Memory.peek(address) | orBits;
-                do Memory.poke(address, value);
-                let address = address + 32;
+    function void drawVerticalLine(int x, int y1, int y2, int col) {
+        var int address, value, yMul32, baseAddress;
+        var int xDiv16, xMod16, yMin, yMax;
+        var int orBits;  // int that will be or'd with peek val to get new val
+        var int lastAddress;    // int needed for vertical lines
+        
+        let baseAddress = 16384;
+
+        let yMax = Math.max(y1, y2);
+        let yMin = Math.min(y1, y2);
+        let xDiv16 = x/16;
+        let xMod16 = x - (xDiv16 * 16);
+        let address = baseAddress + (yMin*32) + xDiv16;
+        let lastAddress = baseAddress + (yMax*32) + xDiv16;
+        let orBits = byte[xMod16];
+        if (col = 0) { let orBits = ~orBits; }
+        while (address < lastAddress) {
+            let value = Memory.peek(address) | orBits;
+            if (col = 0) {
+                let value = Memory.peek(address) & orBits;
             }
+            do Memory.poke(address, value);
+            let address = address + 32;
         }
-
         return;
     }
 
@@ -240,12 +272,9 @@ class Screen {
      * and bottom right corner is (x2,y2), using the current color. */
     function void drawRectangle(int x1, int y1, int x2, int y2) {
         var int y;
-        let y = y1;
-
-        while (y < (y2+1)) {
-            do Screen.drawLine(x1, y, x2, y);
-            let y = y + 1;
-        }
+        
+        do Screen.drawHorizontalLine(x1, x2, y1, (y2-y1), color);
+        
         return;
     }
 
